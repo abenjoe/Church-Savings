@@ -21,7 +21,7 @@ def get_db():
     """Get a request-scoped database connection."""
     if 'db' not in g:
         g.db = psycopg2.connect(DATABASE_URL)
-        g.db.autocommit = False
+        g.db = psycopg2.connect(DATABASE_URL, autocommit=False)
     return g.db
 
 
@@ -35,7 +35,7 @@ def close_db(exception):
 
 def get_cursor():
     """Get a cursor that returns rows as dictionaries."""
-    return get_db().cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    return get_db().cursor(row_factory=psycopg.rows.dict_row)
 
 
 # ============ LOGIN DECORATORS ============
@@ -552,7 +552,7 @@ def add_member():
 @admin_required  # Only Admin can EDIT members
 def edit_member(member_id):
     conn = get_db()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor(row_factory=psycopg.rows.dict_row)
     if request.method == 'POST':
         new_member_id = request.form['member_id'].strip()
         name = request.form['name'].strip()
@@ -593,7 +593,7 @@ def edit_member(member_id):
 @admin_required  # Only Admin can DELETE members
 def delete_member(member_id):
     conn = get_db()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor(row_factory=psycopg.rows.dict_row)
     cur.execute('DELETE FROM members WHERE member_id = %s', [member_id])
     conn.commit()
     cur.close()
@@ -774,7 +774,7 @@ def edit_loan(loan_id):
 @admin_required  # Only Admin can DELETE
 def delete_loan(loan_id):
     conn = get_db()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor(row_factory=psycopg.rows.dict_row)
     cur.execute('SELECT member_id FROM loans WHERE id = %s', [loan_id])
     result = cur.fetchone()
     if result:
@@ -793,7 +793,7 @@ def delete_loan(loan_id):
 @collector_or_admin_required  # Collector can edit within 1 hour
 def edit_savings(savings_id):
     conn = get_db()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor(row_factory=psycopg.rows.dict_row)
 
     # Get the savings record
     cur.execute('SELECT * FROM savings WHERE id = %s', [savings_id])
@@ -855,7 +855,7 @@ def edit_savings(savings_id):
 @admin_required  # Only Admin can DELETE
 def delete_savings(savings_id):
     conn = get_db()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor(row_factory=psycopg.rows.dict_row)
     cur.execute('SELECT member_id FROM savings WHERE id = %s', [savings_id])
     result = cur.fetchone()
     if result:
@@ -896,7 +896,7 @@ def add_repayment(loan_id):
                 return redirect(url_for('add_repayment', loan_id=loan_id))
 
             conn = get_db()
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur = conn.cursor(row_factory=psycopg.rows.dict_row)
             cur.execute('SELECT member_id FROM loans WHERE id = %s', [loan_id])
             loan = cur.fetchone()
 
@@ -973,7 +973,7 @@ def savings_report():
 @collector_or_admin_required  # Collector can bulk add
 def bulk_savings():
     conn = get_db()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor(row_factory=psycopg.rows.dict_row)
     if request.method == 'POST':
         date = request.form.get('date')
         if not date:
