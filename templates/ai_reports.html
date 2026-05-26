@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Report Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+    <style>
+        .chat-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .chat-header h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2rem;
+        }
+        
+        .chat-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .chat-body {
+            display: flex;
+            height: 600px;
+        }
+        
+        .suggestions-panel {
+            width: 300px;
+            background: #f9fafb;
+            border-right: 2px solid #e5e7eb;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .suggestions-panel h3 {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        
+        .suggestion-item {
+            background: white;
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            font-size: 0.9rem;
+        }
+        
+        .suggestion-item:hover {
+            border-color: #8b5cf6;
+            background: #f5f3ff;
+            transform: translateX(5px);
+        }
+        
+        .suggestion-item i {
+            color: #8b5cf6;
+            margin-right: 0.5rem;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        
+        .message {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .message.ai .message-avatar {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .message.ai .message-content {
+            background: white;
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .report-table {
+            width: 100%;
+            margin-top: 1rem;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .report-table th {
+            background: #f3f4f6;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 700;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .report-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .report-table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .chat-input-container {
+            padding: 1.5rem;
+            background: white;
+            border-top: 2px solid #e5e7eb;
+        }
+        
+        .chat-input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
+        .send-button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        .stat-box {
+            display: inline-block;
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 0.5rem 1rem;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            border-radius: 4px;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            display: block;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #059669;
+        }
+
+        @media (max-width: 768px) {
+            .chat-body {
+                flex-direction: column;
+                height: auto;
+            }
+            .suggestions-panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 2px solid #e5e7eb;
+                max-height: 250px;
+                overflow-y: auto;
+            }
+            .chat-messages {
+                height: 350px;
+            }
+            .chat-header h2 {
+                font-size: 1.4rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .chat-header {
+                padding: 1.2rem 1rem;
+            }
+            .chat-header h2 {
+                font-size: 1.2rem;
+            }
+            .chat-header p {
+                font-size: 0.85rem;
+            }
+            .chat-body {
+                height: auto;
+            }
+            .chat-messages {
+                height: 300px;
+                padding: 1rem;
+            }
+            .chat-input-container {
+                padding: 1rem;
+            }
+            .chat-input-wrapper {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .chat-input {
+                width: 100%;
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+            }
+            .send-button {
+                width: 100%;
+                padding: 0.8rem;
+                justify-content: center;
+            }
+            .message-content {
+                max-width: 85%;
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+            }
+            .suggestions-panel {
+                padding: 1rem;
+                max-height: 200px;
+            }
+            .suggestions-panel h3 {
+                font-size: 0.85rem;
+                margin-bottom: 0.6rem;
+            }
+            .suggestion-item {
+                padding: 0.6rem;
+                font-size: 0.8rem;
+            }
+            .report-table {
+                font-size: 0.8rem;
+            }
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem;
+                white-space: nowrap;
+            }
+            .stat-box {
+                padding: 0.4rem 0.7rem;
+                margin: 0.3rem 0.3rem 0.3rem 0;
+            }
+            .stat-value {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .chat-messages {
+                height: 250px;
+                padding: 0.8rem;
+            }
+            .message-content {
+                max-width: 90%;
+                padding: 0.6rem 0.8rem;
+                font-size: 0.85rem;
+            }
+            .message-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        <a href="{{ url_for('index') }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2><i class="fas fa-robot"></i> AI Report Assistant</h2>
+                <p>Ask me anything about your church savings data!</p>
+            </div>
+
+            <div class="chat-body">
+                <div class="suggestions-panel">
+                    <h3><i class="fas fa-lightbulb"></i> Try Asking:</h3>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Show me all members')">
+                        <i class="fas fa-users"></i> Show me all members
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Who are the top savers?')">
+                        <i class="fas fa-trophy"></i> Who are the top savers?
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Who has taken the maximum loan?')">
+                        <i class="fas fa-hand-holding-usd"></i> Maximum loan taker
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Members with outstanding loans')">
+                        <i class="fas fa-exclamation-circle"></i> Outstanding loans
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Monthly savings report')">
+                        <i class="fas fa-chart-line"></i> Monthly savings
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Show profit and interest')">
+                        <i class="fas fa-coins"></i> Profit report
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Members without any savings')">
+                        <i class="fas fa-user-slash"></i> No savings
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Show me lowest savers')">
+                        <i class="fas fa-arrow-down"></i> Lowest savers
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Who paid off their loans?')">
+                        <i class="fas fa-check-circle"></i> Paid loans
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Show active members')">
+                        <i class="fas fa-user-check"></i> Active members
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Show inactive members')">
+                        <i class="fas fa-user-times"></i> Inactive members
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Recent loans issued')">
+                        <i class="fas fa-clock"></i> Recent loans
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Give me a summary')">
+                        <i class="fas fa-chart-pie"></i> Overall summary
+                    </div>
+                    
+                    <div class="suggestion-item" onclick="handleSuggestion('Recent savings transactions')">
+                        <i class="fas fa-clock"></i> Recent savings
+                    </div>
+
+                    <h3 style="margin-top: 2rem;"><i class="fas fa-info-circle"></i> Quick Stats</h3>
+                    <div style="background: white; padding: 1rem; border-radius: 8px;">
+                        <p style="margin: 0.5rem 0; font-size: 0.9rem;">
+                            <i class="fas fa-users" style="color: #3b82f6;"></i> 
+                            <strong>{{ context.total_members }}</strong> Members
+                        </p>
+                        <p style="margin: 0.5rem 0; font-size: 0.9rem;">
+                            <i class="fas fa-piggy-bank" style="color: #10b981;"></i> 
+                            <strong>₹{{ "{:,.0f}".format(context.total_savings) }}</strong> Savings
+                        </p>
+                        <p style="margin: 0.5rem 0; font-size: 0.9rem;">
+                            <i class="fas fa-hand-holding-usd" style="color: #f59e0b;"></i> 
+                            <strong>₹{{ "{:,.0f}".format(context.total_loans) }}</strong> Loans
+                        </p>
+                        <p style="margin: 0.5rem 0; font-size: 0.9rem;">
+                            <i class="fas fa-chart-line" style="color: #8b5cf6;"></i> 
+                            <strong>₹{{ "{:,.0f}".format(context.total_profit) }}</strong> Profit
+                        </p>
+                    </div>
+                </div>
+
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message ai">
+                            <div class="message-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <p><strong>👋 Hello!</strong> I'm your AI Report Assistant.</p>
+                                <p>I can help you generate reports about members, savings, loans, and profits. Just ask me a question in plain English!</p>
+                                <p style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280;">
+                                    💡 <em>Try clicking on the suggestions on the left, or type your own question below.</em>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="chatInput" 
+                                class="chat-input" 
+                                placeholder="Ask me anything... e.g., 'Show me top savers'"
+                                onkeypress="if(event.key==='Enter') sendMessage()"
+                            >
+                            <button class="send-button" onclick="sendMessage()" id="sendButton">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global flag to prevent double-sending
+        let isSending = false;
+
+        // Function called by suggestion buttons
+        function handleSuggestion(question) {
+            console.log('Button clicked:', question);
+            const input = document.getElementById('chatInput');
+            input.value = question;
+            sendMessage();
+        }
+
+        // Main send message function
+        async function sendMessage() {
+            if (isSending) {
+                console.log('Already sending, please wait...');
+                return;
+            }
+
+            const input = document.getElementById('chatInput');
+            const sendButton = document.getElementById('sendButton');
+            const query = input.value.trim();
+            
+            if (!query) {
+                alert('Please type a question first!');
+                return;
+            }
+            
+            isSending = true;
+            input.disabled = true;
+            sendButton.disabled = true;
+            
+            addMessage(`<p>${query}</p>`, true);
+            input.value = '';
+            showLoading();
+            
+            try {
+                const response = await fetch('/ai_generate_report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Server error');
+                }
+                
+                const result = await response.json();
+                removeLoading();
+                
+                if (result.success) {
+                    const reportHtml = formatReport(result.report_type, result.data);
+                    addMessage(reportHtml);
+                } else {
+                    addMessage('<p>❌ Error: ' + result.error + '</p>');
+                }
+            } catch (error) {
+                removeLoading();
+                addMessage('<p>❌ Connection error. Please check if Flask is running.</p>');
+                console.error('Error:', error);
+            }
+            
+            isSending = false;
+            input.disabled = false;
+            sendButton.disabled = false;
+            input.focus();
+        }
+
+        function addMessage(content, isUser = false) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <i class="fas fa-${isUser ? 'user' : 'robot'}"></i>
+                </div>
+                <div class="message-content">
+                    ${content}
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function showLoading() {
+            const messagesDiv = document.getElementById('chatMessages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message ai';
+            loadingDiv.id = 'loadingMessage';
+            
+            loadingDiv.innerHTML = `
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="loading">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            messagesDiv.appendChild(loadingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loading = document.getElementById('loadingMessage');
+            if (loading) loading.remove();
+        }
+
+        function formatReport(reportType, data) {
+            let html = '';
+
+            switch(reportType) {
+                case 'top_savers':
+                    html = '<p><strong>🏆 Top Savers:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
+                    data.members.forEach((m, i) => {
+                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'top_borrowers':
+                    html = '<p><strong>💰 Top Borrowers:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
+                    data.members.forEach((m, i) => {
+                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'lowest_savers':
+                    html = '<p><strong>📉 Lowest Savers:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
+                    data.members.forEach((m, i) => {
+                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'no_savings':
+                    html = `<p><strong>⚠️ Members Without Savings (${data.members.length}):</strong></p>`;
+                    if (data.members.length > 0) {
+                        html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Contact</th></tr></thead><tbody>';
+                        data.members.forEach(m => {
+                            html += `<tr><td>${m.id}</td><td>${m.name}</td><td>${m.contact || 'N/A'}</td></tr>`;
+                        });
+                        html += '</tbody></table>';
+                    } else {
+                        html += '<p style="color: #059669;">✅ Great! All members have savings!</p>';
+                    }
+                    break;
+
+                case 'outstanding_loans':
+                    html = `<p><strong>📋 Outstanding Loans (${data.loans.length}):</strong></p>`;
+                    html += '<table class="report-table"><thead><tr><th>Member</th><th>Loan</th><th>Repaid</th><th>Balance</th></tr></thead><tbody>';
+                    data.loans.forEach(l => {
+                        const balance = parseFloat(l.amount) - parseFloat(l.repaid);
+                        html += `<tr><td>${l.name}</td><td>₹${parseFloat(l.amount).toFixed(2)}</td><td style="color: #10b981;">₹${parseFloat(l.repaid).toFixed(2)}</td><td style="color: #ef4444; font-weight: 700;">₹${balance.toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'paid_loans':
+                    html = `<p><strong>✅ Fully Paid Loans (${data.loans.length}):</strong></p>`;
+                    if (data.loans.length > 0) {
+                        html += '<table class="report-table"><thead><tr><th>Member</th><th>Loan Amount</th><th>Repaid</th><th>Date</th></tr></thead><tbody>';
+                        data.loans.forEach(l => {
+                            html += `<tr><td>${l.name}</td><td>₹${parseFloat(l.amount).toFixed(2)}</td><td style="color: #10b981; font-weight: 700;">₹${parseFloat(l.repaid).toFixed(2)}</td><td>${l.date}</td></tr>`;
+                        });
+                        html += '</tbody></table>';
+                    } else {
+                        html += '<p style="color: #6b7280;">No fully paid loans yet.</p>';
+                    }
+                    break;
+
+                case 'all_members':
+                    html = `<p><strong>👥 All Members (${data.members.length}):</strong></p>`;
+                    html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Savings</th><th>Loans</th></tr></thead><tbody>';
+                    data.members.forEach(m => {
+                        html += `<tr><td>${m.id}</td><td>${m.name}</td><td style="color: #059669;">₹${parseFloat(m.total_savings).toFixed(2)}</td><td style="color: #f59e0b;">₹${parseFloat(m.total_loans).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'monthly_savings':
+                    html = '<p><strong>📊 Monthly Savings:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Month</th><th>Transactions</th><th>Total</th></tr></thead><tbody>';
+                    data.monthly.forEach(m => {
+                        html += `<tr><td>${m.month}</td><td>${m.transactions}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'recent_savings':
+                    html = '<p><strong>🕒 Recent Savings:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Date</th><th>Member</th><th>Amount</th></tr></thead><tbody>';
+                    data.transactions.forEach(t => {
+                        html += `<tr><td>${t.date}</td><td>${t.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(t.amount).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'savings_summary':
+                    const s = data.summary;
+                    html = '<p><strong>💰 Savings Summary:</strong></p>';
+                    html += `<div class="stat-box"><span class="stat-label">Active Savers</span><span class="stat-value">${s.active_savers}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Transactions</span><span class="stat-value">${s.total_transactions}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Total</span><span class="stat-value">₹${parseFloat(s.total_amount).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Average</span><span class="stat-value">₹${parseFloat(s.avg_amount).toFixed(2)}</span></div>`;
+                    break;
+
+                case 'monthly_loans':
+                    html = '<p><strong>📊 Monthly Loans:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Month</th><th>Loans Given</th><th>Total</th></tr></thead><tbody>';
+                    data.monthly.forEach(m => {
+                        html += `<tr><td>${m.month}</td><td>${m.loans_given}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'recent_loans':
+                    html = '<p><strong>🕒 Recent Loans Issued:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Date</th><th>Member</th><th>Amount</th><th>Interest Rate</th></tr></thead><tbody>';
+                    data.loans_recent.forEach(l => {
+                        html += `<tr><td>${l.date}</td><td>${l.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(l.amount).toFixed(2)}</td><td>${l.interest_rate}%</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'loans_summary':
+                    const l = data.summary;
+                    html = '<p><strong>💰 Loans Summary:</strong></p>';
+                    html += `<div class="stat-box"><span class="stat-label">Total Loans</span><span class="stat-value">${l.total_loans}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Amount Given</span><span class="stat-value">₹${parseFloat(l.total_amount).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Repaid</span><span class="stat-value">₹${parseFloat(l.total_repaid).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color: #ef4444;"><span class="stat-label">Outstanding</span><span class="stat-value" style="color: #ef4444;">₹${parseFloat(l.outstanding).toFixed(2)}</span></div>`;
+                    break;
+
+                case 'profit_report':
+                    html = '<p><strong>💵 Profit/Interest Report:</strong></p>';
+                    if (data.total_profit) {
+                        html += `<div class="stat-box" style="border-left-color: #8b5cf6; margin-bottom: 1rem;"><span class="stat-label">Total Profit Earned</span><span class="stat-value" style="color: #8b5cf6;">₹${parseFloat(data.total_profit).toFixed(2)}</span></div>`;
+                    }
+                    html += '<p style="margin-top: 1rem;"><strong>Monthly Breakdown:</strong></p>';
+                    html += '<table class="report-table"><thead><tr><th>Month</th><th>Interest Earned</th></tr></thead><tbody>';
+                    data.monthly.forEach(m => {
+                        html += `<tr><td>${m.month}</td><td style="color: #8b5cf6; font-weight: 700;">₹${parseFloat(m.interest_earned).toFixed(2)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'summary':
+                    html = '<p><strong>📊 Overall Summary:</strong></p>';
+                    html += `<div class="stat-box" style="border-left-color: #3b82f6;"><span class="stat-label">Members</span><span class="stat-value" style="color: #3b82f6;">${data.total_members}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value">₹${parseFloat(data.total_savings).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color: #f59e0b;"><span class="stat-label">Total Loans</span><span class="stat-value" style="color: #f59e0b;">₹${parseFloat(data.total_loans).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color: #8b5cf6;"><span class="stat-label">Profit</span><span class="stat-value" style="color: #8b5cf6;">₹${parseFloat(data.total_profit).toFixed(2)}</span></div>`;
+                    break;
+
+                case 'active_members':
+                    html = `<p><strong>✅ Active Members (${data.members.length}):</strong></p>`;
+                    html += '<p style="color: #6b7280; font-size: 0.9rem;">Members who have saved in the last 3 months</p>';
+                    html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Last Transaction</th></tr></thead><tbody>';
+                    data.members.forEach(m => {
+                        html += `<tr><td>${m.id}</td><td>${m.name}</td><td style="color: #10b981;">${m.last_transaction}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'inactive_members':
+                    html = `<p><strong>⚠️ Inactive Members (${data.members.length}):</strong></p>`;
+                    html += '<p style="color: #6b7280; font-size: 0.9rem;">Members with no savings in last 3 months</p>';
+                    if (data.members.length > 0) {
+                        html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Contact</th></tr></thead><tbody>';
+                        data.members.forEach(m => {
+                            html += `<tr><td>${m.id}</td><td>${m.name}</td><td>${m.contact || 'N/A'}</td></tr>`;
+                        });
+                        html += '</tbody></table>';
+                    } else {
+                        html += '<p style="color: #10b981;">✅ All members are active!</p>';
+                    }
+                    break;
+
+                case 'help':
+                    html = '<p><strong>❓ I can help you with many things!</strong></p>';
+                    html += '<div style="margin-top: 1rem;">';
+                    html += '<p><strong>👥 Member Questions:</strong></p>';
+                    html += '<ul style="line-height: 1.8; margin-left: 1.5rem;">';
+                    html += '<li>"Who are the top savers?"</li>';
+                    html += '<li>"Who has taken the maximum loan?"</li>';
+                    html += '<li>"Show me members without savings"</li>';
+                    html += '<li>"List all members"</li>';
+                    html += '<li>"Show active members"</li>';
+                    html += '<li>"Who are the lowest savers?"</li>';
+                    html += '</ul>';
+                    html += '<p><strong>💰 Savings Questions:</strong></p>';
+                    html += '<ul style="line-height: 1.8; margin-left: 1.5rem;">';
+                    html += '<li>"Monthly savings report"</li>';
+                    html += '<li>"Recent savings transactions"</li>';
+                    html += '<li>"Total savings summary"</li>';
+                    html += '</ul>';
+                    html += '<p><strong>💵 Loan Questions:</strong></p>';
+                    html += '<ul style="line-height: 1.8; margin-left: 1.5rem;">';
+                    html += '<li>"Show outstanding loans"</li>';
+                    html += '<li>"Who paid off their loans?"</li>';
+                    html += '<li>"Recent loans issued"</li>';
+                    html += '<li>"Monthly loan report"</li>';
+                    html += '</ul>';
+                    html += '<p><strong>📊 Other Questions:</strong></p>';
+                    html += '<ul style="line-height: 1.8; margin-left: 1.5rem;">';
+                    html += '<li>"Show profit and interest"</li>';
+                    html += '<li>"Give me a dashboard"</li>';
+                    html += '<li>"Overall summary"</li>';
+                    html += '</ul>';
+                    html += '</div>';
+                    html += '<p style="margin-top: 1rem; padding: 1rem; background: #f0fdf4; border-radius: 8px; color: #059669;"><strong>💡 Tip:</strong> Just ask naturally! I understand many ways of asking the same question.</p>';
+                    break;
+
+                default:
+                    html = '<p>❌ I didn\'t quite understand that. Could you try asking in a different way?</p>';
+                    html += '<p style="margin-top: 1rem; color: #6b7280;">Try questions like:</p>';
+                    html += '<ul style="margin-left: 1.5rem; color: #6b7280;">';
+                    html += '<li>"Who are the top savers?"</li>';
+                    html += '<li>"Show outstanding loans"</li>';
+                    html += '<li>"Monthly savings report"</li>';
+                    html += '<li>Or type "help" to see all options</li>';
+                    html += '</ul>';
+            }
+
+            return html;
+        }
+
+        // Log when page loads
+        console.log('✅ AI Reports page loaded successfully');
+        console.log('✅ Click any suggestion button to test!');
+    </script>
+</body>
+</html>

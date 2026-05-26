@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Loan Payment - {{ loan.member_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <strong>{{ message }}</strong>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <a href="{{ url_for('view_member', member_id=loan.member_id) }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Profile
+        </a>
+
+        <div class="form-container">
+            <div class="form-card">
+                <h2><i class="fas fa-money-bill-wave"></i> Record Loan Payment</h2>
+                <p class="text-muted mb-3"><strong><i class="fas fa-user"></i> Member:</strong> {{ loan.member_name }}</p>
+                
+                <div class="loan-info-box">
+                    <h5><i class="fas fa-info-circle"></i> Loan Details</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <p><strong><i class="fas fa-calendar"></i> Loan Date:</strong> {{ loan.date.strftime('%d %B %Y') }}</p>
+                            <p><strong><i class="fas fa-rupee-sign"></i> Principal:</strong> ₹{{ "{:,.2f}".format(loan.amount) }}</p>
+                            <p><strong><i class="fas fa-chart-line"></i> Interest:</strong> ₹{{ "{:,.2f}".format(loan.interest_amount) }}</p>
+                        </div>
+                        <div>
+                            <p><strong><i class="fas fa-calculator"></i> Total Due:</strong> ₹{{ "{:,.2f}".format(loan.amount + loan.interest_amount) }}</p>
+                            <p style="color: #ef4444;"><strong><i class="fas fa-exclamation-circle"></i> Principal Remaining:</strong> ₹{{ "{:,.2f}".format(principal_remaining) }}</p>
+                            <p style="color: #f59e0b;"><strong><i class="fas fa-exclamation-circle"></i> Interest Remaining:</strong> ₹{{ "{:,.2f}".format(interest_remaining) }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('add_repayment', loan_id=loan.id) }}">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-calendar"></i> Payment Date *</label>
+                        <input type="date" name="date" class="form-control" value="{{ today }}" required>
+                        <small class="text-muted">Select the date of this payment</small>
+                    </div>
+
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-lightbulb"></i> <strong>Tip:</strong> You can pay principal, interest, or both. Enter amounts separately below.
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-rupee-sign"></i> Principal Payment (₹)</label>
+                            <input type="number" name="principal_paid" id="principalPaid" class="form-control" step="0.01" min="0" max="{{ principal_remaining }}" placeholder="0.00" oninput="calculateTotal()">
+                            <small class="text-muted">Max: ₹{{ "{:,.2f}".format(principal_remaining) }}</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-chart-line"></i> Interest Payment (₹)</label>
+                            <input type="number" name="interest_paid" id="interestPaid" class="form-control" step="0.01" min="0" placeholder="0.00" oninput="calculateTotal()">
+                            <small class="text-muted">Can pay multiple months at once</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success" style="margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong><i class="fas fa-calculator"></i> Total Payment:</strong>
+                            <span style="font-size: 1.5rem; font-weight: 900;" id="totalPayment">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-hand-pointer"></i> <strong>Quick Options:</strong>
+                        <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="payInterestOnly()">
+                                Pay Interest Only (₹{{ "{:,.2f}".format(interest_remaining) }})
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="payPrincipalOnly()">
+                                Pay Principal Only (₹{{ "{:,.2f}".format(principal_remaining) }})
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="payFull()">
+                                Pay Full Amount (₹{{ "{:,.2f}".format(principal_remaining + interest_remaining) }})
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Record Payment
+                        </button>
+                        <a href="{{ url_for('view_member', member_id=loan.member_id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const principalRemaining = {{ principal_remaining }};
+        const interestRemaining = {{ interest_remaining }};
+
+        function calculateTotal() {
+            const principal = parseFloat(document.getElementById('principalPaid').value) || 0;
+            const interest = parseFloat(document.getElementById('interestPaid').value) || 0;
+            const total = principal + interest;
+            document.getElementById('totalPayment').textContent = '₹' + total.toFixed(2);
+        }
+
+        function payInterestOnly() {
+            document.getElementById('principalPaid').value = '0';
+            document.getElementById('interestPaid').value = interestRemaining.toFixed(2);
+            calculateTotal();
+        }
+
+        function payPrincipalOnly() {
+            document.getElementById('principalPaid').value = principalRemaining.toFixed(2);
+            document.getElementById('interestPaid').value = '0';
+            calculateTotal();
+        }
+
+        function payFull() {
+            document.getElementById('principalPaid').value = principalRemaining.toFixed(2);
+            document.getElementById('interestPaid').value = interestRemaining.toFixed(2);
+            calculateTotal();
+        }
+    </script>
+</body>
+</html>

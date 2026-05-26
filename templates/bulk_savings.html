@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Savings Entry</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+    <style>
+        .bulk-entry-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            margin-top: 1.5rem;
+        }
+        
+        .bulk-entry-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .bulk-entry-table thead {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .bulk-entry-table th {
+            color: white;
+            padding: 1.2rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .bulk-entry-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .bulk-entry-table tbody tr {
+            transition: all 0.2s;
+        }
+        
+        .bulk-entry-table tbody tr:hover {
+            background: #f0fdf4;
+        }
+        
+        .bulk-entry-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .amount-input {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: #f9fafb;
+        }
+        
+        .amount-input:focus {
+            outline: none;
+            border-color: #10b981;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        .amount-input:not(:placeholder-shown) {
+            background: #ecfdf5;
+            border-color: #10b981;
+        }
+        
+        .member-id-cell {
+            font-weight: 700;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .member-name-cell {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 1rem;
+        }
+        
+        .last-savings-cell {
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+        
+        .total-savings-cell {
+            font-weight: 700;
+            color: #059669;
+            font-size: 1rem;
+        }
+        
+        .sticky-footer {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 12px 12px 0 0;
+            margin-top: 2rem;
+        }
+        
+        .summary-info {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .summary-item label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+        
+        .summary-item .value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #10b981;
+        }
+        
+        .quick-fill-section {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            padding: 1.2rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            border: 2px solid #bfdbfe;
+        }
+        
+        .quick-fill-section h6 {
+            color: #1e40af;
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+        }
+        
+        .quick-fill-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .quick-fill-controls input {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .table-container {
+            max-height: calc(100vh - 400px);
+            overflow: auto;
+            border-radius: 12px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table-wrapper {
+            min-width: 700px;
+        }
+
+        @media (max-width: 768px) {
+            .sticky-footer {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .summary-info {
+                width: 100%;
+                justify-content: space-around;
+            }
+            
+            .quick-fill-section {
+                padding: 0.8rem;
+            }
+            
+            .quick-fill-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .quick-fill-controls input {
+                min-width: 100%;
+            }
+            
+            .table-container {
+                max-height: calc(100vh - 300px);
+            }
+            
+            .summary-item .value {
+                font-size: 1.2rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .sticky-footer {
+                position: relative;
+                bottom: auto;
+                flex-direction: column;
+                gap: 0.8rem;
+                margin-top: 1rem;
+                padding: 0.8rem;
+                border-radius: 12px;
+            }
+            
+            .summary-info {
+                gap: 1rem;
+            }
+            
+            .summary-item .value {
+                font-size: 1rem;
+            }
+            
+            .sticky-footer .btn-success {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <strong>{{ message }}</strong>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <a href="{{ url_for('index') }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="profile-card">
+            <h2><i class="fas fa-table"></i> Bulk Savings Entry</h2>
+            <p class="text-muted">Enter savings for multiple members at once - like a spreadsheet!</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('bulk_savings') }}" id="bulkSavingsForm">
+            <div class="form-card" style="margin-bottom: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label"><i class="fas fa-calendar"></i> Savings Date *</label>
+                    <input type="date" name="date" id="savingsDate" class="form-control" value="{{ today }}" required style="max-width: 300px;">
+                    <small class="text-muted">This date will apply to all savings entries below</small>
+                </div>
+            </div>
+
+            <div class="quick-fill-section">
+                <h6><i class="fas fa-magic"></i> Quick Fill Tools</h6>
+                <div class="quick-fill-controls">
+                    <input type="number" id="fillAmount" class="form-control" placeholder="Enter amount (e.g., 100)" step="0.01" min="0">
+                    <button type="button" class="btn btn-primary" onclick="fillAllAmounts()">
+                        <i class="fas fa-fill"></i> Fill All
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearAllAmounts()">
+                        <i class="fas fa-eraser"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            {% if members %}
+            <div class="table-container">
+                <div class="bulk-entry-table">
+                    <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 8%;">S.No</th>
+                                <th style="width: 12%;">Member ID</th>
+                                <th style="width: 30%;">Member Name</th>
+                                <th style="width: 15%;">Total Savings</th>
+                                <th style="width: 15%;">Last Entry</th>
+                                <th style="width: 20%;">Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td style="text-align: center; color: #9ca3af; font-weight: 600;">{{ loop.index }}</td>
+                                <td class="member-id-cell">{{ member.member_id }}</td>
+                                <td class="member-name-cell">{{ member.name }}</td>
+                                <td class="total-savings-cell">₹{{ "{:,.2f}".format(member.total_savings) }}</td>
+                                <td class="last-savings-cell">
+                                    {% if member.last_savings_date %}
+                                        <i class="fas fa-calendar-check"></i> {{ member.last_savings_date.strftime('%d %b %Y') }}
+                                    {% else %}
+                                        <i class="fas fa-minus-circle"></i> No entries
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <input 
+                                        type="number" 
+                                        name="amount_{{ member.member_id }}" 
+                                        class="amount-input" 
+                                        placeholder="0.00" 
+                                        step="0.01" 
+                                        min="0"
+                                        oninput="updateSummary()"
+                                    >
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky-footer">
+                <div class="summary-info">
+                    <div class="summary-item">
+                        <label><i class="fas fa-users"></i> Members with Entry</label>
+                        <div class="value" id="membersCount">0</div>
+                    </div>
+                    <div class="summary-item">
+                        <label><i class="fas fa-calculator"></i> Total Amount</label>
+                        <div class="value" id="totalAmount">₹0.00</div>
+                    </div>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-success" style="font-size: 1.1rem; padding: 1rem 2.5rem;">
+                        <i class="fas fa-save"></i> Save All Entries
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> <strong>No members found.</strong> Please add members first!
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <script>
+        function updateSummary() {
+            const inputs = document.querySelectorAll('.amount-input');
+            let count = 0;
+            let total = 0;
+            
+            inputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                if (value > 0) {
+                    count++;
+                    total += value;
+                }
+            });
+            
+            document.getElementById('membersCount').textContent = count;
+            document.getElementById('totalAmount').textContent = '₹' + total.toFixed(2);
+        }
+        
+        function fillAllAmounts() {
+            const amount = document.getElementById('fillAmount').value;
+            if (!amount || parseFloat(amount) <= 0) {
+                alert('Please enter a valid amount to fill!');
+                return;
+            }
+            
+            const inputs = document.querySelectorAll('.amount-input');
+            inputs.forEach(input => {
+                input.value = amount;
+            });
+            
+            updateSummary();
+        }
+        
+        function clearAllAmounts() {
+            if (!confirm('Are you sure you want to clear all amounts?')) {
+                return;
+            }
+            
+            const inputs = document.querySelectorAll('.amount-input');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            
+            updateSummary();
+        }
+        
+        // Allow Enter key to move to next field
+        document.querySelectorAll('.amount-input').forEach((input, index, inputs) => {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextIndex = index + 1;
+                    if (nextIndex < inputs.length) {
+                        inputs[nextIndex].focus();
+                    }
+                }
+            });
+        });
+        
+        // Confirm before leaving if there are unsaved entries
+        window.addEventListener('beforeunload', function(e) {
+            const inputs = document.querySelectorAll('.amount-input');
+            let hasValues = false;
+            
+            inputs.forEach(input => {
+                if (input.value && parseFloat(input.value) > 0) {
+                    hasValues = true;
+                }
+            });
+            
+            if (hasValues) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        
+        // Remove the beforeunload listener when form is submitted
+        document.getElementById('bulkSavingsForm').addEventListener('submit', function() {
+            window.removeEventListener('beforeunload', arguments.callee);
+        });
+    </script>
+</body>
+</html>

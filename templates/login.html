@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Church Savings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .login-box {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            width: 100%;
+            max-width: 450px;
+            margin: 20px;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        .login-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .login-form {
+            padding: 40px 30px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .login-btn:hover {
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 576px) {
+            .login-box {
+                margin: 10px;
+                max-width: 100%;
+            }
+            .login-header {
+                padding: 25px 20px;
+            }
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+            .login-header i.fa-church {
+                font-size: 2.2rem !important;
+            }
+            .login-form {
+                padding: 25px 20px;
+            }
+            .form-group {
+                margin-bottom: 18px;
+            }
+            .form-input {
+                padding: 10px 12px;
+                font-size: 0.95rem;
+            }
+            .login-btn {
+                padding: 12px;
+                font-size: 1rem;
+            }
+            .form-group label {
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .login-box {
+                margin: 5px;
+            }
+            .login-header {
+                padding: 20px 15px;
+            }
+            .login-header h1 {
+                font-size: 1.3rem;
+            }
+            .login-header p {
+                font-size: 0.85rem;
+            }
+            .login-form {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <div class="login-header">
+            <i class="fas fa-church" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h1>Church Savings</h1>
+            <p>Keezha Kattuvilai Management System</p>
+        </div>
+
+        <form class="login-form" method="POST">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}" style="margin-bottom: 20px;">
+                            <strong>{{ message }}</strong>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> Username</label>
+                <input type="text" name="username" class="form-input" placeholder="Enter Admin, Member ID, or Member Name" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input type="password" name="password" class="form-input" placeholder="Enter password" required>
+            </div>
+
+            <button type="submit" class="login-btn">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </form>
+    </div>
+</body>
+</html>

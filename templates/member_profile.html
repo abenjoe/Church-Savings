@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ member.name }} - Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <strong>{{ message }}</strong>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <a href="{{ url_for('index') }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="profile-card">
+            <div class="profile-header">
+                <div>
+                    <h2><i class="fas fa-user-circle"></i> {{ member.name }}</h2>
+                    <small class="text-muted"><i class="fas fa-id-badge"></i> Member ID: {{ member.id }}</small>
+                </div>
+                <a href="{{ url_for('edit_member', member_id=member.id) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </a>
+            </div>
+            <div class="profile-info">
+                <p><strong><i class="fas fa-map-marker-alt"></i> Address:</strong> {{ member.address }}</p>
+                {% if member.contact %}
+                    <p><strong><i class="fas fa-phone"></i> Contact:</strong> {{ member.contact }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="accounts-grid">
+            <div class="account-card">
+                <div class="account-header savings">
+                    <h5><i class="fas fa-piggy-bank"></i> Savings Account</h5>
+                    <a href="{{ url_for('add_savings', member_id=member.id) }}" class="btn btn-sm btn-light">
+                        <i class="fas fa-plus"></i> Add Savings
+                    </a>
+                </div>
+                <div class="account-body">
+                    <div class="account-total">
+                        <h6><i class="fas fa-wallet"></i> Total Savings Balance</h6>
+                        <h3>₹{{ "{:,.2f}".format(total_savings) }}</h3>
+                    </div>
+                    <h6 class="mb-2"><strong><i class="fas fa-history"></i> Transaction History</strong></h6>
+                    <div class="transactions-container">
+                        {% if savings %}
+                            {% for saving in savings %}
+                                <div class="transaction-item">
+                                    <div class="transaction-header">
+                                        <div class="transaction-date">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ saving.date.strftime('%d %B %Y') }}</span>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <div class="transaction-amount">+ ₹{{ "{:,.2f}".format(saving.amount) }}</div>
+                                            <a href="{{ url_for('edit_savings', savings_id=saving.id) }}" class="btn btn-sm btn-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('delete_savings', savings_id=saving.id) }}" 
+                                               class="btn btn-sm btn-danger" 
+                                               title="Delete"
+                                               onclick="return confirm('Are you sure you want to delete this savings entry?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted"><i class="fas fa-inbox"></i> No savings recorded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="account-card">
+                <div class="account-header loans">
+                    <h5><i class="fas fa-hand-holding-usd"></i> Loan Account</h5>
+                    <a href="{{ url_for('add_loan', member_id=member.id) }}" class="btn btn-sm btn-light">
+                        <i class="fas fa-plus"></i> Add Loan
+                    </a>
+                </div>
+                <div class="account-body">
+                    <div class="account-total loans-total">
+                        <h6><i class="fas fa-money-bill-wave"></i> Total Loans Issued</h6>
+                        <h3>₹{{ "{:,.2f}".format(total_loans) }}</h3>
+                    </div>
+                    
+                    {% if total_interest_earned > 0 %}
+                    <div class="profit-badge-container">
+                        <div class="profit-badge">
+                            <i class="fas fa-chart-line"></i> 
+                            <strong>Total Interest:</strong> 
+                            <span class="profit-amount">₹{{ "{:,.2f}".format(total_interest_earned) }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <h6 class="mb-2"><strong><i class="fas fa-history"></i> Loan History</strong></h6>
+                    <div class="transactions-container">
+                        {% if loans %}
+                            {% for loan in loans %}
+                                <div class="loan-item">
+                                    <div class="transaction-header">
+                                        <div class="transaction-date">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>{{ loan.date.strftime('%d %B %Y') }}</span>
+                                        </div>
+                                        <div class="transaction-amount loan-amount">₹{{ "{:,.2f}".format(loan.amount) }}</div>
+                                    </div>
+                                    <div class="loan-details">
+                                        <p><i class="fas fa-percentage"></i> <strong>Interest Rate:</strong> {{ loan.interest_rate }}% per month</p>
+                                        <p><i class="fas fa-chart-line"></i> <strong>Interest Amount:</strong> ₹{{ "{:,.2f}".format(loan.interest) }}</p>
+                                        <p><i class="fas fa-calculator"></i> <strong>Total Due:</strong> ₹{{ "{:,.2f}".format(loan.total_due) }}</p>
+                                        <hr style="border: 1px dashed #fde68a; margin: 0.5rem 0;">
+                                        {% if loan.principal_repaid is defined %}
+                                        <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Principal Repaid:</strong> ₹{{ "{:,.2f}".format(loan.principal_repaid) }}</p>
+                                        <p style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> <strong>Interest Repaid:</strong> ₹{{ "{:,.2f}".format(loan.interest_repaid) }}</p>
+                                        <p style="color: #3b82f6;"><i class="fas fa-wallet"></i> <strong>Total Repaid:</strong> ₹{{ "{:,.2f}".format(loan.total_repayments) }}</p>
+                                        <hr style="border: 1px dashed #fde68a; margin: 0.5rem 0;">
+                                        <p style="color: #ef4444;"><i class="fas fa-exclamation-circle"></i> <strong>Principal Remaining:</strong> ₹{{ "{:,.2f}".format(loan.principal_remaining) }}</p>
+                                        {% else %}
+                                        <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Repaid:</strong> ₹{{ "{:,.2f}".format(loan.total_repayments) }}</p>
+                                        {% endif %}
+                                        <p style="color: #991b1b; font-size: 1.1rem;"><i class="fas fa-coins"></i> <strong>Total Remaining:</strong> ₹{{ "{:,.2f}".format(loan.remaining) }}</p>
+                                    </div>
+                                    {% if loan.remaining > 0 %}
+                                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                            <a href="{{ url_for('add_repayment', loan_id=loan.id) }}" class="btn btn-success btn-sm" style="flex: 1;">
+                                                <i class="fas fa-money-bill-wave"></i> Record Payment
+                                            </a>
+                                            <a href="{{ url_for('edit_loan', loan_id=loan.id) }}" class="btn btn-primary btn-sm" title="Edit Loan">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('delete_loan', loan_id=loan.id) }}" 
+                                               class="btn btn-danger btn-sm" 
+                                               title="Delete Loan"
+                                               onclick="return confirm('⚠️ Are you sure you want to delete this loan?\n\nThis will also delete all repayment records!')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+                                            <span class="paid-badge" style="flex: 1;"><i class="fas fa-check-double"></i> PAID IN FULL</span>
+                                            <a href="{{ url_for('delete_loan', loan_id=loan.id) }}" 
+                                               class="btn btn-danger btn-sm" 
+                                               title="Delete Loan"
+                                               onclick="return confirm('Are you sure you want to delete this completed loan?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted"><i class="fas fa-inbox"></i> No loans recorded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

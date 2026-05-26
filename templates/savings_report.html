@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savings Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+    <style>
+        .report-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        .report-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .report-table th {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .report-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            white-space: nowrap;
+        }
+        .report-table tr:hover {
+            background: #f9fafb;
+        }
+        .report-table tr:last-child td {
+            border-bottom: none;
+        }
+        .amount-cell {
+            font-weight: 700;
+            color: #059669;
+            font-size: 1.1rem;
+        }
+        .total-row {
+            background: #ecfdf5 !important;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 2rem;
+        }
+        .table-scroll:last-child {
+            margin-bottom: 0;
+        }
+        .table-scroll table {
+            min-width: 600px;
+        }
+        .print-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        @media print {
+            .btn, .print-button, .header {
+                display: none;
+            }
+            body {
+                background: white;
+            }
+        }
+        @media (max-width: 576px) {
+            .report-table th {
+                padding: 0.7rem 0.6rem;
+                font-size: 0.75rem;
+            }
+            .report-table td {
+                padding: 0.7rem 0.6rem;
+                font-size: 0.85rem;
+            }
+            .amount-cell {
+                font-size: 0.9rem;
+            }
+            .total-row {
+                font-size: 1rem;
+            }
+            .print-button {
+                bottom: 1rem;
+                right: 1rem;
+                padding: 0.6rem 1rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        <a href="{{ url_for('index') }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="profile-card">
+            <h2><i class="fas fa-chart-bar"></i> Savings Report</h2>
+            <p class="text-muted">Complete record of all savings transactions by member and date</p>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="stat-card green" style="margin-bottom: 2rem;">
+            <div>
+                <h6>Total Savings Collected</h6>
+                <h2>₹{{ "{:,.2f}".format(total_savings) }}</h2>
+                <small style="color: #059669; font-size: 0.9rem;">
+                    <i class="fas fa-list"></i> {{ all_savings|length }} total transactions
+                </small>
+            </div>
+            <i class="fas fa-piggy-bank stat-icon"></i>
+        </div>
+
+        <!-- All Savings Transactions (Main Table) -->
+        <h3 style="margin-bottom: 1rem;"><i class="fas fa-list-alt"></i> All Savings Transactions</h3>
+        <div class="table-scroll">
+        <div class="report-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 12%;">Date</th>
+                        <th style="width: 12%;">Member ID</th>
+                        <th style="width: 46%;">Member Name</th>
+                        <th style="width: 30%; text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if all_savings %}
+                        {% for saving in all_savings %}
+                        <tr>
+                            <td><strong>{{ saving.date.strftime('%d %b %Y') }}</strong></td>
+                            <td>{{ saving.member_id }}</td>
+                            <td>{{ saving.member_name }}</td>
+                            <td class="amount-cell" style="text-align: right;">₹{{ "{:,.2f}".format(saving.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td colspan="3" style="text-align: right; padding-right: 2rem;">
+                                <i class="fas fa-calculator"></i> GRAND TOTAL:
+                            </td>
+                            <td style="text-align: right; color: #059669;">₹{{ "{:,.2f}".format(total_savings) }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #6b7280; padding: 2rem;">
+                                <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                No savings transactions recorded yet
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        </div>
+
+        <!-- Summary by Member (Secondary Table) -->
+        <h3 style="margin-bottom: 1rem;"><i class="fas fa-users"></i> Summary by Member</h3>
+        <div class="table-scroll">
+        <div class="report-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Member ID</th>
+                        <th style="width: 45%;">Member Name</th>
+                        <th style="width: 20%; text-align: center;">Transactions</th>
+                        <th style="width: 20%; text-align: right;">Total Savings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if member_summary %}
+                        {% for member in member_summary %}
+                        <tr>
+                            <td><strong>{{ member.id }}</strong></td>
+                            <td>{{ member.name }}</td>
+                            <td style="text-align: center;">
+                                <span style="background: #ecfdf5; color: #059669; padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 600;">
+                                    {{ member.transaction_count }}
+                                </span>
+                            </td>
+                            <td class="amount-cell" style="text-align: right;">₹{{ "{:,.2f}".format(member.total_savings) }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td colspan="3" style="text-align: right; padding-right: 2rem;">
+                                <i class="fas fa-calculator"></i> GRAND TOTAL:
+                            </td>
+                            <td style="text-align: right; color: #059669;">₹{{ "{:,.2f}".format(total_savings) }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #6b7280;">No members with savings yet</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        </div>
+
+        <!-- Print Button -->
+        <button class="btn btn-primary print-button" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+    </div>
+</body>
+</html>

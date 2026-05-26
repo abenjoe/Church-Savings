@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Church Savings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Theme functionality
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            updateThemeButtons(theme);
+            
+            // Save to database
+            fetch('{{ url_for("settings") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'theme=' + theme
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.status === 'success') {
+                      const message = theme === 'dark' ? '🌙 Dark mode activated!' : '☀️ Light mode activated!';
+                      showThemeMessage(message);
+                  }
+              });
+        }
+        
+        function updateThemeButtons(theme) {
+            const lightBtn = document.getElementById('lightThemeBtn');
+            const darkBtn = document.getElementById('darkThemeBtn');
+            
+            if (theme === 'dark') {
+                darkBtn.classList.add('btn-primary');
+                darkBtn.classList.remove('btn-secondary');
+                lightBtn.classList.add('btn-secondary');
+                lightBtn.classList.remove('btn-primary');
+            } else {
+                lightBtn.classList.add('btn-primary');
+                lightBtn.classList.remove('btn-secondary');
+                darkBtn.classList.add('btn-secondary');
+                darkBtn.classList.remove('btn-primary');
+            }
+        }
+        
+        function showThemeMessage(message) {
+            // Create temporary message element
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'alert alert-success';
+            msgDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; animation: fadeIn 0.3s;';
+            msgDiv.innerHTML = '<strong>' + message + '</strong>';
+            document.body.appendChild(msgDiv);
+            
+            // Remove after 2 seconds
+            setTimeout(() => {
+                msgDiv.style.animation = 'fadeOut 0.3s';
+                setTimeout(() => msgDiv.remove(), 300);
+            }, 2000);
+        }
+        
+        // Load saved theme on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            updateThemeButtons(savedTheme);
+        });
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <strong>{{ message }}</strong>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <a href="{{ url_for('index') }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="form-container">
+            <div class="form-card">
+                <h2><i class="fas fa-cog"></i> Settings</h2>
+                
+                <div class="alert alert-info mb-4">
+                    <strong><i class="fas fa-user"></i> Username:</strong> {{ session.username }}<br>
+                    <strong><i class="fas fa-shield-alt"></i> Role:</strong> 
+                    {% if session.is_admin %}Administrator (Full Access){% else %}Member (View Only){% endif %}
+                </div>
+
+                <!-- Theme Settings -->
+                <h3 style="margin-bottom: 1rem;"><i class="fas fa-palette"></i> Theme Settings</h3>
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label class="form-label">Choose Theme</label>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <button type="button" class="btn btn-primary" id="lightThemeBtn" onclick="setTheme('light')" style="flex: 1;">
+                            <i class="fas fa-sun"></i> Light Mode
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="darkThemeBtn" onclick="setTheme('dark')" style="flex: 1;">
+                            <i class="fas fa-moon"></i> Dark Mode
+                        </button>
+                    </div>
+                    <small class="text-muted" style="display: block; margin-top: 0.5rem;">
+                        <i class="fas fa-info-circle"></i> Your preference will be saved automatically
+                    </small>
+                </div>
+
+                <hr style="margin: 2rem 0;">
+
+                <h3 style="margin-bottom: 1rem;"><i class="fas fa-key"></i> Change Password</h3>
+                
+                <form method="POST" onsubmit="return validatePasswordForm()">
+                    <div class="form-group">
+                        <label class="form-label">Current Password *</label>
+                        <input type="password" name="current_password" id="current_password" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">New Password *</label>
+                        <input type="password" name="new_password" id="new_password" class="form-control" required>
+                        <small class="text-muted">
+                            Password must contain:
+                            <br>• At least 6 characters
+                            <br>• At least one letter (a-z or A-Z)
+                            <br>• At least one number (0-9)
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password *</label>
+                        <input type="password" name="confirm_password" id="confirm_password" class="form-control" required>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Password
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+                
+                <script>
+                function validatePasswordForm() {
+                    const newPassword = document.getElementById('new_password').value;
+                    const confirmPassword = document.getElementById('confirm_password').value;
+                    
+                    // Check if passwords match
+                    if (newPassword !== confirmPassword) {
+                        alert('❌ Passwords do not match!\n\nPlease make sure both password fields are identical.');
+                        document.getElementById('confirm_password').focus();
+                        return false;
+                    }
+                    
+                    // Check minimum length
+                    if (newPassword.length < 6) {
+                        alert('❌ Password too short!\n\nPassword must be at least 6 characters long.');
+                        document.getElementById('new_password').focus();
+                        return false;
+                    }
+                    
+                    // Check if password is only numbers
+                    if (/^\d+$/.test(newPassword)) {
+                        alert('❌ Invalid Password!\n\nPassword cannot be only numbers.\n\nPassword must contain:\n✓ At least one letter (a-z or A-Z)\n✓ At least one number (0-9)');
+                        document.getElementById('new_password').focus();
+                        return false;
+                    }
+                    
+                    // Check if password has at least one letter
+                    if (!/[a-zA-Z]/.test(newPassword)) {
+                        alert('❌ Invalid Password!\n\nPassword must contain at least one letter (a-z or A-Z).');
+                        document.getElementById('new_password').focus();
+                        return false;
+                    }
+                    
+                    // Check if password has at least one number
+                    if (!/\d/.test(newPassword)) {
+                        alert('❌ Invalid Password!\n\nPassword must contain at least one number (0-9).');
+                        document.getElementById('new_password').focus();
+                        return false;
+                    }
+                    
+                    return true;
+                }
+                </script>
+
+                <hr style="margin: 2rem 0;">
+                
+                <div style="text-align: center;">
+                    <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

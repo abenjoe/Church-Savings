@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Member - {{ member.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <strong>{{ message }}</strong>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <a href="{{ url_for('view_member', member_id=member.member_id) }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Profile
+        </a>
+
+        <div class="form-container">
+            <div class="form-card">
+                <h2><i class="fas fa-user-edit"></i> Edit Member Details</h2>
+                
+                <form method="POST" action="{{ url_for('edit_member', member_id=member.member_id) }}" onsubmit="return validateEditMemberForm()">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-id-card"></i> Member ID *</label>
+                        <input type="text" name="member_id" class="form-control" value="{{ member.member_id }}" required>
+                        <small class="form-text" style="color: #6b7280; font-size: 0.875rem; display: block; margin-top: 0.25rem;">
+                            <i class="fas fa-info-circle"></i> You can change the Member ID if needed
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-user"></i> Full Name *</label>
+                        <input type="text" name="name" id="edit_member_name" class="form-control" value="{{ member.name }}" required>
+                        <small class="text-muted">Only letters, spaces, and periods allowed</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-map-marker-alt"></i> Address *</label>
+                        <textarea name="address" class="form-control" rows="3" required>{{ member.address }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-phone"></i> Contact Number</label>
+                        <input type="tel" name="contact" id="edit_member_contact" class="form-control" value="{{ member.contact or '' }}" placeholder="Enter phone number">
+                        <small class="text-muted">Must be exactly 10 digits (optional)</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <a href="{{ url_for('view_member', member_id=member.member_id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+                
+                <script>
+                function validateEditMemberForm() {
+                    const name = document.getElementById('edit_member_name').value.trim();
+                    const contact = document.getElementById('edit_member_contact').value.trim();
+                    
+                    // Validate name - only letters, spaces, and periods
+                    const namePattern = /^[A-Za-z\s.]+$/;
+                    if (!namePattern.test(name)) {
+                        alert('❌ Invalid Name!\n\nName should only contain:\n✓ Letters (A-Z, a-z)\n✓ Spaces\n✓ Periods (.)\n\n❌ Numbers and special characters are NOT allowed.');
+                        document.getElementById('edit_member_name').focus();
+                        return false;
+                    }
+                    
+                    // Check if name is all numbers
+                    if (/^\d+$/.test(name)) {
+                        alert('❌ Invalid Name!\n\nName cannot be only numbers.\nPlease enter a proper name with letters.');
+                        document.getElementById('edit_member_name').focus();
+                        return false;
+                    }
+                    
+                    // Validate contact if provided
+                    if (contact && contact.length > 0) {
+                        // Must be exactly 10 digits
+                        if (!/^\d{10}$/.test(contact)) {
+                            alert('❌ Invalid Phone Number!\n\nPhone number must be:\n✓ Exactly 10 digits\n✓ Only numbers (0-9)\n\nExample: 9842041235');
+                            document.getElementById('edit_member_contact').focus();
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                }
+                </script>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

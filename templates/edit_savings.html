@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Savings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', savedTheme);
+            } else {
+                window.addEventListener('DOMContentLoaded', function() {
+                    document.body.setAttribute('data-theme', savedTheme);
+                });
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-church"></i> Our Lady of Lourdes Church</h1>
+        <p>Keezha Kattuvilai - Savings Management System</p>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <strong>{{ message }}</strong>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <a href="{{ url_for('view_member', member_id=saving.member_id) }}" class="btn btn-link mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Profile
+        </a>
+
+        <div class="form-container">
+            <div class="form-card">
+                <h2><i class="fas fa-edit"></i> Edit Savings Entry</h2>
+                <div class="alert alert-success mb-4">
+                    <strong><i class="fas fa-user"></i> Member:</strong> {{ saving.member_name }} (ID: {{ saving.member_id }})
+                </div>
+                
+                <form method="POST" action="{{ url_for('edit_savings', savings_id=saving.id) }}">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-calendar"></i> Date *</label>
+                        <input type="date" name="date" class="form-control" value="{{ saving.date.strftime('%Y-%m-%d') }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-rupee-sign"></i> Amount (₹) *</label>
+                        <input type="number" name="amount" class="form-control" step="0.01" min="1" value="{{ saving.amount }}" required>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Update Savings
+                        </button>
+                        <a href="{{ url_for('view_member', member_id=saving.member_id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
