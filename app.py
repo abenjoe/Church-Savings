@@ -2,8 +2,8 @@ import os
 from datetime import datetime, date, timedelta
 from functools import wraps
 
-import psycopg2
-import psycopg2.extras
+import psycopg as psycopg2
+import psycopg.rows
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, g
 
 app = Flask(__name__)
