@@ -1214,7 +1214,11 @@ def ai_generate_report():
             cur.close()
         return jsonify({'success': False, 'error': str(e)})
 
-
+@app.route('/setup-db-x7k2')
+def setup_db():
+    init_db()
+    return 'Database initialized!'
+    
 if __name__ == '__main__':
     with app.app_context():
         init_db()
