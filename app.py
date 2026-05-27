@@ -1046,7 +1046,7 @@ def ai_generate_report():
                 any(word in query for word in ['saver', 'saving', 'savings', 'saved', 'deposit']):
             cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total FROM members m
                            LEFT JOIN savings s ON m.member_id = s.member_id GROUP BY m.member_id, m.name 
-                           HAVING SUM(s.amount) > 0 ORDER BY total DESC LIMIT 10''')
+                           HAVING SUM(l.amount) > 0 ORDER BY total DESC LIMIT 10''')
             report_data['members'] = cur.fetchall()
             report_type = 'top_savers'
 
@@ -1056,7 +1056,7 @@ def ai_generate_report():
                     ['loan', 'borrow', 'borrowed', 'borrower', 'debt', 'credit', 'taken', 'took']):
             cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(l.amount), 0) as total FROM members m
                            LEFT JOIN loans l ON m.member_id = l.member_id GROUP BY m.member_id, m.name 
-                           HAVING SUM(s.amount) > 0 ORDER BY total DESC LIMIT 10''')
+                           HAVING SUM(l.amount) > 0 ORDER BY total DESC LIMIT 10''')
             report_data['members'] = cur.fetchall()
             report_type = 'top_borrowers'
 
