@@ -622,7 +622,7 @@
                     html = '<p><strong>🏆 Top Savers:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
                     data.members.forEach((m, i) => {
-                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${i+1}</td><td>${m.member_id}</td><td>${m.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -631,7 +631,7 @@
                     html = '<p><strong>💰 Top Borrowers:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
                     data.members.forEach((m, i) => {
-                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${i+1}</td><td>${m.member_id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -640,7 +640,7 @@
                     html = '<p><strong>📉 Lowest Savers:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
                     data.members.forEach((m, i) => {
-                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${i+1}</td><td>${m.member_id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -650,7 +650,7 @@
                     if (data.members.length > 0) {
                         html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Contact</th></tr></thead><tbody>';
                         data.members.forEach(m => {
-                            html += `<tr><td>${m.id}</td><td>${m.name}</td><td>${m.contact || 'N/A'}</td></tr>`;
+                            html += `<tr><td>${m.member_id}</td><td>${m.name}</td><td>${m.contact || 'N/A'}</td></tr>`;
                         });
                         html += '</tbody></table>';
                     } else {
@@ -685,7 +685,7 @@
                     html = `<p><strong>👥 All Members (${data.members.length}):</strong></p>`;
                     html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Savings</th><th>Loans</th></tr></thead><tbody>';
                     data.members.forEach(m => {
-                        html += `<tr><td>${m.id}</td><td>${m.name}</td><td style="color: #059669;">₹${parseFloat(m.total_savings).toFixed(2)}</td><td style="color: #f59e0b;">₹${parseFloat(m.total_loans).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${m.member_id}</td><td>${m.name}</td><td style="color: #059669;">₹${parseFloat(m.total_savings).toFixed(2)}</td><td style="color: #f59e0b;">₹${parseFloat(m.total_loans).toFixed(2)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -770,7 +770,7 @@
                     html += '<p style="color: #6b7280; font-size: 0.9rem;">Members who have saved in the last 3 months</p>';
                     html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Last Transaction</th></tr></thead><tbody>';
                     data.members.forEach(m => {
-                        html += `<tr><td>${m.id}</td><td>${m.name}</td><td style="color: #10b981;">${m.last_transaction}</td></tr>`;
+                        html += `<tr><td>${m.member_id}</td><td>${m.name}</td><td style="color: #10b981;">${m.last_transaction}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -781,7 +781,7 @@
                     if (data.members.length > 0) {
                         html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Contact</th></tr></thead><tbody>';
                         data.members.forEach(m => {
-                            html += `<tr><td>${m.id}</td><td>${m.name}</td><td>${m.contact || 'N/A'}</td></tr>`;
+                            html += `<tr><td>${m.member_id}</td><td>${m.name}</td><td>${m.contact || 'N/A'}</td></tr>`;
                         });
                         html += '</tbody></table>';
                     } else {
