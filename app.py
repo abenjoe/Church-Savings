@@ -20,7 +20,6 @@ DATABASE_URL = os.environ.get(
 def get_db():
     """Get a request-scoped database connection."""
     if 'db' not in g:
-        g.db = psycopg2.connect(DATABASE_URL)
         g.db = psycopg2.connect(DATABASE_URL, autocommit=False)
     return g.db
 
@@ -960,7 +959,7 @@ def savings_report():
     all_savings = cur.fetchall()
     cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total_savings, COUNT(s.id) as transaction_count
                    FROM members m LEFT JOIN savings s ON m.member_id = s.member_id GROUP BY m.member_id, m.name
-                   HAVING total_savings > 0 ORDER BY total_savings DESC''')
+                   HAVING COALESCE(SUM(s.amount), 0) > 0 ORDER BY total_savings DESC''')
     member_summary = cur.fetchall()
     cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings')
     total_savings = float(cur.fetchone()['total'])
@@ -1046,7 +1045,7 @@ def ai_generate_report():
                 any(word in query for word in ['saver', 'saving', 'savings', 'saved', 'deposit']):
             cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total FROM members m
                            LEFT JOIN savings s ON m.member_id = s.member_id GROUP BY m.member_id, m.name 
-                           HAVING SUM(l.amount) > 0 ORDER BY total DESC LIMIT 10''')
+                           HAVING COALESCE(SUM(s.amount), 0) > 0 ORDER BY total DESC LIMIT 10''')
             report_data['members'] = cur.fetchall()
             report_type = 'top_savers'
 
@@ -1056,7 +1055,7 @@ def ai_generate_report():
                     ['loan', 'borrow', 'borrowed', 'borrower', 'debt', 'credit', 'taken', 'took']):
             cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(l.amount), 0) as total FROM members m
                            LEFT JOIN loans l ON m.member_id = l.member_id GROUP BY m.member_id, m.name 
-                           HAVING SUM(l.amount) > 0 ORDER BY total DESC LIMIT 10''')
+                           HAVING COALESCE(SUM(l.amount), 0) > 0 ORDER BY total DESC LIMIT 10''')
             report_data['members'] = cur.fetchall()
             report_type = 'top_borrowers'
 
@@ -1064,7 +1063,7 @@ def ai_generate_report():
                 any(word in query for word in ['saver', 'saving', 'savings', 'saved', 'deposit']):
             cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total FROM members m
                            LEFT JOIN savings s ON m.member_id = s.member_id GROUP BY m.member_id, m.name 
-                           HAVING SUM(s.amount) > 0 ORDER BY total ASC LIMIT 10''')
+                           HAVING COALESCE(SUM(s.amount), 0) > 0 ORDER BY total ASC LIMIT 10''')
             report_data['members'] = cur.fetchall()
             report_type = 'lowest_savers'
 
@@ -1198,7 +1197,7 @@ def ai_generate_report():
                 cur.execute('''SELECT m.member_id, m.name, MAX(s.date) as last_transaction FROM members m 
                                JOIN savings s ON m.member_id = s.member_id
                                GROUP BY m.member_id, m.name
-                               HAVING MAX(s.date) >= CURRENT_DATE - INTERVAL '3 months'
+                               HAVING last_transaction >= CURRENT_DATE - INTERVAL '3 months'
                                ORDER BY last_transaction DESC''')
                 report_data['members'] = cur.fetchall()
                 report_type = 'active_members'
@@ -1214,11 +1213,7 @@ def ai_generate_report():
             cur.close()
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/setup-db-x7k2')
-def setup_db():
-    init_db()
-    return 'Database initialized!'
-    
+
 if __name__ == '__main__':
     with app.app_context():
         init_db()
