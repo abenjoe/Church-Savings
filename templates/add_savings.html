@@ -49,7 +49,7 @@
                     <strong><i class="fas fa-user"></i> Member:</strong> {{ member.name }} (ID: {{ member.id }})
                 </div>
                 
-                <form method="POST" action="{{ url_for('add_savings', member_id=member.id) }}">
+                <form method="POST" action="{{ url_for('add_savings', member_id=member.member_id) }}">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-calendar"></i> Date *</label>
                         <input type="date" name="date" class="form-control" value="{{ today }}" required>
