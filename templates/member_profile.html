@@ -46,9 +46,9 @@
             <div class="profile-header">
                 <div>
                     <h2><i class="fas fa-user-circle"></i> {{ member.name }}</h2>
-                    <small class="text-muted"><i class="fas fa-id-badge"></i> Member ID: {{ member.id }}</small>
+                    <small class="text-muted"><i class="fas fa-id-badge"></i> Member ID: {{ member.member_id }}</small>
                 </div>
-                <a href="{{ url_for('edit_member', member_id=member.id) }}" class="btn btn-primary btn-sm">
+                <a href="{{ url_for('edit_member', member_id=member.member_id) }}" class="btn btn-primary btn-sm">
                     <i class="fas fa-edit"></i> Edit Profile
                 </a>
             </div>
