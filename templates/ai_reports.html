@@ -770,7 +770,7 @@
                     html += '<p style="color: #6b7280; font-size: 0.9rem;">Members who have saved in the last 3 months</p>';
                     html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Last Transaction</th></tr></thead><tbody>';
                     data.members.forEach(m => {
-                        html += `<tr><td>${m.member_id}</td><td>${m.name}</td><td style="color: #10b981;">${m.last_transaction}</td></tr>`;
+                        html += `<tr><td>${m.member_id}</td><td>${m.name}</td><td style="color: #10b981;">${new Date(m.last_transaction).toLocaleDateString()}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
