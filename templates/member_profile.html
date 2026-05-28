@@ -119,16 +119,6 @@
                         <h3>₹{{ "{:,.2f}".format(total_loans) }}</h3>
                     </div>
                     
-                    {% if total_interest_earned > 0 %}
-                    <div class="profit-badge-container">
-                        <div class="profit-badge">
-                            <i class="fas fa-chart-line"></i> 
-                            <strong>Total Interest:</strong> 
-                            <span class="profit-amount">₹{{ "{:,.2f}".format(total_interest_earned) }}</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
                     <h6 class="mb-2"><strong><i class="fas fa-history"></i> Loan History</strong></h6>
                     <div class="transactions-container">
                         {% if loans %}
@@ -142,13 +132,10 @@
                                         <div class="transaction-amount loan-amount">₹{{ "{:,.2f}".format(loan.amount) }}</div>
                                     </div>
                                     <div class="loan-details">
-                                        <p><i class="fas fa-percentage"></i> <strong>Interest Rate:</strong> {{ loan.interest_rate }}% per month</p>
-                                        <p><i class="fas fa-chart-line"></i> <strong>Interest Amount:</strong> ₹{{ "{:,.2f}".format(loan.interest) }}</p>
                                         <p><i class="fas fa-calculator"></i> <strong>Total Due:</strong> ₹{{ "{:,.2f}".format(loan.total_due) }}</p>
                                         <hr style="border: 1px dashed #fde68a; margin: 0.5rem 0;">
                                         {% if loan.principal_repaid is defined %}
                                         <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Principal Repaid:</strong> ₹{{ "{:,.2f}".format(loan.principal_repaid) }}</p>
-                                        <p style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> <strong>Interest Repaid:</strong> ₹{{ "{:,.2f}".format(loan.interest_repaid) }}</p>
                                         <p style="color: #3b82f6;"><i class="fas fa-wallet"></i> <strong>Total Repaid:</strong> ₹{{ "{:,.2f}".format(loan.total_repayments) }}</p>
                                         <hr style="border: 1px dashed #fde68a; margin: 0.5rem 0;">
                                         <p style="color: #ef4444;"><i class="fas fa-exclamation-circle"></i> <strong>Principal Remaining:</strong> ₹{{ "{:,.2f}".format(loan.principal_remaining) }}</p>
