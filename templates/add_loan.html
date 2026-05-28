@@ -46,45 +46,6 @@
                 </div>
                 
                 <form method="POST" action="{{ url_for('add_loan', member_id=member.member_id) }}">
-                    <div class="form-group">
-                        <label class="form-label"><i class="fas fa-calendar"></i> Loan Date *</label>
-                        <input type="date" name="date" class="form-control" value="{{ today }}" required>
-                        <small class="text-muted">Select the date when the loan is issued</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label"><i class="fas fa-rupee-sign"></i> Loan Amount (Principal) *</label>
-                        <input type="number" name="amount" class="form-control" step="0.01" min="1" required placeholder="e.g., 5000.00">
-                        <small class="text-muted">Enter the principal loan amount (amount given to member)</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label"><i class="fas fa-percentage"></i> Interest Rate (% per month) *</label>
-                        <input type="number" name="interest_rate" class="form-control" step="0.1" min="0" value="1" required>
-                        <small class="text-muted">Enter monthly interest rate (e.g., 1 for 1% per month)</small>
-                    </div>
-
-                    <div class="alert alert-success">
-                        <i class="fas fa-robot"></i> <strong>Automatic Interest Calculation:</strong>
-                        <ul style="margin: 0.5rem 0 0 1.5rem;">
-                            <li>Interest is calculated automatically based on months elapsed</li>
-                            <li>Formula: (Principal × Rate × Months) / 100</li>
-                            <li>Interest updates automatically each month</li>
-                            <li>Only paid interest is added to church profit</li>
-                        </ul>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-plus"></i> Issue Loan
-                        </button>
-                        <a href="{{ url_for('view_member', member_id=member.member_id) }}" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Cancel
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 </body>
 </html>
