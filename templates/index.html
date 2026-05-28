@@ -21,6 +21,11 @@
         })();
     </script>
     <style>
+
+        [data-theme="dark"] .user-bar { background: #1a1a2e !important; box-shadow: 0 2px 10px rgba(0,0,0,0.3) !important; }
+        [data-theme="dark"] .user-info { background: #2d3748 !important; }
+        [data-theme="dark"] .user-name { color: #e2e8f0 !important; }
+
         .user-bar {
             background: white;
             padding: 15px 0;
@@ -97,9 +102,6 @@
                 </div>
             </div>
             <div class="user-actions">
-                <span style="font-size: 0.7rem; color: #6b7280; font-style: italic; display: inline-flex; align-items: center; gap: 0.3rem; background: #f3f4f6; padding: 0.3rem 0.6rem; border-radius: 20px; border: 1px solid #e5e7eb; white-space: nowrap;">
-                    <i class="fas fa-code"></i> Created by Aaron McGeo
-                </span>
                 <a href="{{ url_for('settings') }}" class="btn" style="background: #6b7280; color: white; padding: 0.7rem 1.5rem; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
                     <i class="fas fa-cog"></i> Settings
                 </a>
