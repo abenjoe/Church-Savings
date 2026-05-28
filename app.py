@@ -484,7 +484,6 @@ def view_member(member_id):
     total_savings = sum(float(s['amount']) for s in savings)
     cur.execute('SELECT * FROM loans WHERE member_id = %s ORDER BY date DESC', [member_id])
     loans = cur.fetchall()
-    total_interest_earned = 0
     for loan in loans:
         loan['amount'] = float(loan['amount'])
         cur.execute('SELECT * FROM loan_repayments WHERE loan_id = %s ORDER BY date DESC', [loan['id']])
@@ -495,7 +494,7 @@ def view_member(member_id):
     total_loans = sum(float(l['amount']) for l in loans)
     cur.close()
     return render_template('member_profile.html', member=member, savings=savings, total_savings=total_savings,
-                           loans=loans, total_loans=total_loans, total_interest_earned=total_interest_earned,
+                           loans=loans, total_loans=total_loans,
                            role=role)
 
 
