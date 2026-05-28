@@ -38,7 +38,7 @@
             {% endif %}
         {% endwith %}
 
-        <a href="{{ url_for('view_member', member_id=member.id) }}" class="btn btn-link mb-3">
+        <a href="{{ url_for('view_member', member_id=member.member_id) }}" class="btn btn-link mb-3">
             <i class="fas fa-arrow-left"></i> Back to Profile
         </a>
 
@@ -46,10 +46,10 @@
             <div class="form-card">
                 <h2><i class="fas fa-hand-holding-usd"></i> Add Loan Entry</h2>
                 <div class="alert alert-info mb-4" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 5px solid #f59e0b;">
-                    <strong><i class="fas fa-user"></i> Member:</strong> {{ member.name }} (ID: {{ member.id }})
+                    <strong><i class="fas fa-user"></i> Member:</strong> {{ member.name }} (ID: {{ member.member_id }})
                 </div>
                 
-                <form method="POST" action="{{ url_for('add_loan', member_id=member.id) }}">
+                <form method="POST" action="{{ url_for('add_loan', member_id=member.member_id) }}">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-calendar"></i> Loan Date *</label>
                         <input type="date" name="date" class="form-control" value="{{ today }}" required>
@@ -82,7 +82,7 @@
                         <button type="submit" class="btn btn-warning">
                             <i class="fas fa-plus"></i> Issue Loan
                         </button>
-                        <a href="{{ url_for('view_member', member_id=member.id) }}" class="btn btn-secondary">
+                        <a href="{{ url_for('view_member', member_id=member.member_id) }}" class="btn btn-secondary">
                             <i class="fas fa-times"></i> Cancel
                         </a>
                     </div>
