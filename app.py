@@ -487,19 +487,11 @@ def view_member(member_id):
     total_interest_earned = 0
     for loan in loans:
         loan['amount'] = float(loan['amount'])
-        loan['interest_rate'] = float(loan['interest_rate'])
-
         cur.execute('SELECT * FROM loan_repayments WHERE loan_id = %s ORDER BY date DESC', [loan['id']])
         loan['repayments'] = cur.fetchall()
         loan['principal_repaid'] = sum(float(r.get('principal_paid', 0)) for r in loan['repayments'])
-        loan['interest_repaid'] = sum(float(r.get('interest_paid', 0)) for r in loan['repayments'])
-        loan['total_repayments'] = loan['principal_repaid'] + loan['interest_repaid']
-        loan['interest'] = calculate_interest(loan['date'], loan['amount'], loan['interest_rate'])
-        total_interest_earned += loan['interest_repaid']
-        loan['principal_remaining'] = loan['amount'] - loan['principal_repaid']
-        loan['interest_remaining'] = loan['interest'] - loan['interest_repaid']
-        loan['total_due'] = loan['amount'] + loan['interest']
-        loan['remaining'] = loan['total_due'] - loan['total_repayments']
+        loan['total_repayments'] = loan['principal_repaid']
+        loan['remaining'] = loan['amount'] - loan['principal_repaid']
     total_loans = sum(float(l['amount']) for l in loans)
     cur.close()
     return render_template('member_profile.html', member=member, savings=savings, total_savings=total_savings,
@@ -656,20 +648,14 @@ def add_loan(member_id):
         try:
             date = request.form.get('date', '').strip()
             amount = request.form.get('amount', '').strip()
-            interest_rate = request.form.get('interest_rate', '').strip()
-
-            if not date or not amount or not interest_rate:
+            if not date or not amount:
                 flash('Please fill in all required fields', 'danger')
                 return redirect(url_for('add_loan', member_id=member_id))
 
             try:
                 amount_float = float(amount)
-                interest_float = float(interest_rate)
                 if amount_float <= 0:
                     flash('Loan amount must be greater than zero', 'danger')
-                    return redirect(url_for('add_loan', member_id=member_id))
-                if interest_float < 0:
-                    flash('Interest rate cannot be negative', 'danger')
                     return redirect(url_for('add_loan', member_id=member_id))
             except ValueError:
                 flash('Invalid number format', 'danger')
@@ -677,10 +663,10 @@ def add_loan(member_id):
 
             conn = get_db()
             cur = conn.cursor()
-            added_by = session.get('username')  # Track who added it
+            added_by = session.get('username')
             cur.execute(
                 'INSERT INTO loans (member_id, date, amount, interest_rate, interest_amount, added_by, added_at) VALUES (%s, %s, %s, %s, 0, %s, NOW())',
-                (member_id, date, amount_float, interest_float, added_by))
+                (member_id, date, amount_float, 0, added_by))
             conn.commit()
 
             # Log the action
@@ -727,20 +713,14 @@ def edit_loan(loan_id):
         try:
             date = request.form.get('date', '').strip()
             amount = request.form.get('amount', '').strip()
-            interest_rate = request.form.get('interest_rate', '').strip()
-
-            if not date or not amount or not interest_rate:
+            if not date or not amount:
                 flash('Please fill in all required fields', 'danger')
                 return redirect(url_for('edit_loan', loan_id=loan_id))
 
             try:
                 amount_float = float(amount)
-                interest_float = float(interest_rate)
                 if amount_float <= 0:
                     flash('Loan amount must be greater than zero', 'danger')
-                    return redirect(url_for('edit_loan', loan_id=loan_id))
-                if interest_float < 0:
-                    flash('Interest rate cannot be negative', 'danger')
                     return redirect(url_for('edit_loan', loan_id=loan_id))
             except ValueError:
                 flash('Invalid number format', 'danger')
@@ -750,8 +730,8 @@ def edit_loan(loan_id):
             edited_by = session.get('username')
 
             cur.execute(
-                'UPDATE loans SET date = %s, amount = %s, interest_rate = %s, last_edited_at = NOW(), last_edited_by = %s WHERE id = %s',
-                (date, amount_float, interest_float, edited_by, loan_id))
+                'UPDATE loans SET date = %s, amount = %s, last_edited_at = NOW(), last_edited_by = %s WHERE id = %s',
+                (date, amount_float, edited_by, loan_id))
             get_db().commit()
 
             # Log the action
@@ -876,22 +856,15 @@ def add_repayment(loan_id):
         try:
             date = request.form.get('date', '')
             principal_paid = request.form.get('principal_paid', '0').strip()
-            interest_paid = request.form.get('interest_paid', '0').strip()
-
             if not principal_paid or principal_paid == '':
                 principal_paid = 0
             else:
                 principal_paid = float(principal_paid)
 
-            if not interest_paid or interest_paid == '':
-                interest_paid = 0
-            else:
-                interest_paid = float(interest_paid)
-
-            total_amount = principal_paid + interest_paid
+            total_amount = principal_paid
 
             if not date or total_amount <= 0:
-                flash('Please enter a date and at least one payment amount', 'danger')
+                flash('Please enter a date and a payment amount', 'danger')
                 return redirect(url_for('add_repayment', loan_id=loan_id))
 
             conn = get_db()
@@ -907,7 +880,7 @@ def add_repayment(loan_id):
             added_by = session.get('username')
             cur.execute(
                 'INSERT INTO loan_repayments (loan_id, date, principal_paid, interest_paid, total_amount, added_by, added_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())',
-                (loan_id, date, principal_paid, interest_paid, total_amount, added_by))
+                (loan_id, date, principal_paid, 0, total_amount, added_by))
             conn.commit()
 
             # Log the action
@@ -936,18 +909,13 @@ def add_repayment(loan_id):
         return redirect(url_for('index'))
 
     loan['amount'] = float(loan['amount'])
-    loan['interest_rate'] = float(loan['interest_rate'])
-
     cur.execute('SELECT * FROM loan_repayments WHERE loan_id = %s', [loan_id])
     repayments = cur.fetchall()
     principal_paid = sum(float(r.get('principal_paid', 0)) for r in repayments)
-    interest_paid = sum(float(r.get('interest_paid', 0)) for r in repayments)
-    loan['interest_amount'] = calculate_interest(loan['date'], loan['amount'], loan['interest_rate'])
     principal_remaining = loan['amount'] - principal_paid
-    interest_remaining = loan['interest_amount'] - interest_paid
     cur.close()
     return render_template('add_repayment.html', loan=loan, principal_remaining=principal_remaining,
-                           interest_remaining=interest_remaining, today=datetime.now().strftime('%Y-%m-%d'))
+                           today=datetime.now().strftime('%Y-%m-%d'))
 
 
 @app.route('/savings_report')
