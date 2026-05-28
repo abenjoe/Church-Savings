@@ -1197,7 +1197,7 @@ def ai_generate_report():
                 cur.execute('''SELECT m.member_id, m.name, MAX(s.date) as last_transaction FROM members m 
                                JOIN savings s ON m.member_id = s.member_id
                                GROUP BY m.member_id, m.name
-                               HAVING last_transaction >= CURRENT_DATE - INTERVAL '3 months'
+                               HAVING MAX(s.date) >= CURRENT_DATE - INTERVAL '3 months'
                                ORDER BY last_transaction DESC''')
                 report_data['members'] = cur.fetchall()
                 report_type = 'active_members'
