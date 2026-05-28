@@ -143,6 +143,32 @@
                                         <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Repaid:</strong> ₹{{ "{:,.2f}".format(loan.total_repayments) }}</p>
                                         {% endif %}
                                         <p style="color: #991b1b; font-size: 1.1rem;"><i class="fas fa-coins"></i> <strong>Total Remaining:</strong> ₹{{ "{:,.2f}".format(loan.remaining) }}</p>
+                                        {% if loan.repayments %}
+                                        <div style="margin-top: 1rem;">
+                                            <p style="font-weight: 700; margin-bottom: 0.5rem;"><i class="fas fa-history"></i> Repayment History:</p>
+                                            <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+                                                <thead>
+                                                    <tr style="background: #f3f4f6;">
+                                                        <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid #e5e7eb;">Date</th>
+                                                        <th style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #e5e7eb;">Principal</th>
+                                                        <th style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #e5e7eb;">Interest</th>
+                                                        <th style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #e5e7eb;">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for r in loan.repayments %}
+                                                    <tr>
+                                                        <td style="padding: 0.5rem; border-bottom: 1px solid #f3f4f6;">{{ r.date.strftime('%d %b %Y') if r.date else '-' }}</td>
+                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; color: #10b981;">₹{{ "{:,.2f}".format(r.principal_paid or 0) }}</td>
+                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; color: #8b5cf6;">₹{{ "{:,.2f}".format(r.interest_paid or 0) }}</td>
+                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; font-weight: 700;">₹{{ "{:,.2f}".format(r.total_amount or 0) }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% endif %}
+
                                     </div>
                                     {% if loan.remaining > 0 %}
                                         <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
