@@ -488,9 +488,10 @@ def view_member(member_id):
         loan['amount'] = float(loan['amount'])
         cur.execute('SELECT * FROM loan_repayments WHERE loan_id = %s ORDER BY date DESC', [loan['id']])
         loan['repayments'] = cur.fetchall()
-        loan['principal_repaid'] = sum(float(r.get('principal_paid', 0)) for r in loan['repayments'])
-        loan['total_repayments'] = loan['principal_repaid']
-        loan['remaining'] = loan['amount'] - loan['principal_repaid']
+        loan['principal_repaid'] = round(sum(float(r.get('principal_paid', 0) or 0) for r in loan['repayments']), 2)
+        loan['interest_repaid'] = round(sum(float(r.get('interest_paid', 0) or 0) for r in loan['repayments']), 2)
+        loan['total_repayments'] = round(loan['principal_repaid'] + loan['interest_repaid'], 2)
+        loan['remaining'] = round(loan['amount'] - loan['principal_repaid'], 2)
     total_loans = sum(float(l['amount']) for l in loans)
     cur.close()
     return render_template('member_profile.html', member=member, savings=savings, total_savings=total_savings,
@@ -855,12 +856,19 @@ def add_repayment(loan_id):
         try:
             date = request.form.get('date', '')
             principal_paid = request.form.get('principal_paid', '0').strip()
+            interest_paid = request.form.get('interest_paid', '0').strip()
+
             if not principal_paid or principal_paid == '':
                 principal_paid = 0
             else:
-                principal_paid = float(principal_paid)
+                principal_paid = round(float(principal_paid), 2)
 
-            total_amount = principal_paid
+            if not interest_paid or interest_paid == '':
+                interest_paid = 0
+            else:
+                interest_paid = round(float(interest_paid), 2)
+
+            total_amount = round(principal_paid + interest_paid, 2)
 
             if not date or total_amount <= 0:
                 flash('Please enter a date and a payment amount', 'danger')
@@ -879,7 +887,7 @@ def add_repayment(loan_id):
             added_by = session.get('username')
             cur.execute(
                 'INSERT INTO loan_repayments (loan_id, date, principal_paid, interest_paid, total_amount, added_by, added_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())',
-                (loan_id, date, principal_paid, 0, total_amount, added_by))
+                (loan_id, date, principal_paid, interest_paid, total_amount, added_by))
             conn.commit()
 
             # Log the action
