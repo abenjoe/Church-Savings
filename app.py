@@ -50,8 +50,6 @@ def login_required(f):
 
 
 def admin_required(f):
-    """Decorator to require admin role"""
-
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session:
@@ -66,8 +64,6 @@ def admin_required(f):
 
 
 def collector_or_admin_required(f):
-    """Decorator to require collector or admin role"""
-
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session:
@@ -83,21 +79,17 @@ def collector_or_admin_required(f):
 
 # ============ HELPER FUNCTIONS ============
 def can_edit_within_hour(added_at):
-    """Check if item can be edited (within 1 hour for collectors)"""
     if session.get('role') == 'admin':
-        return True  # Admin can edit anytime
-
+        return True
     if session.get('role') == 'collector':
         if isinstance(added_at, str):
             added_at = datetime.strptime(added_at, '%Y-%m-%d %H:%M:%S')
         time_diff = datetime.now() - added_at
         return time_diff < timedelta(hours=1)
-
-    return False  # Members cannot edit
+    return False
 
 
 def log_action(username, action, entity_type, entity_id, details):
-    """Log user actions to audit_logs table"""
     try:
         conn = get_db()
         cur = conn.cursor()
@@ -108,7 +100,7 @@ def log_action(username, action, entity_type, entity_id, details):
         conn.commit()
         cur.close()
     except Exception:
-        pass  # Silently fail if logging fails
+        pass
 
 
 # ============ DATABASE INITIALIZATION ============
@@ -118,7 +110,6 @@ def init_db():
         conn = get_db()
         cur = conn.cursor()
 
-        # Members table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS members (
                 id SERIAL PRIMARY KEY,
@@ -130,7 +121,6 @@ def init_db():
             )
         ''')
 
-        # Savings table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS savings (
                 id SERIAL PRIMARY KEY,
@@ -146,7 +136,6 @@ def init_db():
             )
         ''')
 
-        # Loans table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS loans (
                 id SERIAL PRIMARY KEY,
@@ -164,7 +153,6 @@ def init_db():
             )
         ''')
 
-        # Loan repayments table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS loan_repayments (
                 id SERIAL PRIMARY KEY,
@@ -180,7 +168,6 @@ def init_db():
             )
         ''')
 
-        # Users table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -193,7 +180,6 @@ def init_db():
             )
         ''')
 
-        # Audit logs table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS audit_logs (
                 id SERIAL PRIMARY KEY,
@@ -206,7 +192,6 @@ def init_db():
             )
         ''')
 
-        # User preferences table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS user_preferences (
                 id SERIAL PRIMARY KEY,
@@ -217,7 +202,6 @@ def init_db():
             )
         ''')
 
-        # Create default admin / collector if they don't exist
         cur.execute("SELECT id FROM users WHERE username = 'Admin'")
         if not cur.fetchone():
             cur.execute(
@@ -242,93 +226,73 @@ def init_db():
 # ============ LOGIN ROUTES ============
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if 'logged_in' in session:
+        return redirect(url_for('index'))
+
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password'].strip()
 
         cur = get_cursor()
 
-        # Check users table
+        # Check users table first (Admin / collector)
         cur.execute('SELECT * FROM users WHERE username = %s', [username])
         user = cur.fetchone()
 
-        if user:
-            if password == user['password']:
-                session['logged_in'] = True
-                session['username'] = user['username']
-                session['is_admin'] = user.get('is_admin', False)
-                session['role'] = user.get('role', 'member')
-                session['member_id'] = user.get('member_id')
-                log_action(username, 'login', 'user', username, 'User logged in')
-                if session['role'] == 'admin':
-                    flash('Welcome Admin! You have full access.', 'success')
-                elif session['role'] == 'collector':
-                    flash('Welcome Collector! You can add/edit data (1-hour edit window).', 'success')
-                else:
-                    flash('Welcome!', 'success')
-                cur.close()
-                return redirect(url_for('index'))
+        if user and password == user['password']:
+            session['logged_in'] = True
+            session['username'] = user['username']
+            session['is_admin'] = user.get('is_admin', False)
+            session['role'] = user.get('role', 'member')
+            session['member_id'] = user.get('member_id')
+            log_action(username, 'login', 'user', username, 'User logged in')
+            if session['role'] == 'admin':
+                flash('Welcome Admin! You have full access.', 'success')
+            elif session['role'] == 'collector':
+                flash('Welcome Collector! You can add/edit data (1-hour edit window).', 'success')
+            else:
+                flash('Welcome!', 'success')
+            cur.close()
+            return redirect(url_for('index'))
 
-        # Login by phone number (contact)
-        cur.execute('SELECT * FROM members WHERE contact = %s', [username])
-        member = cur.fetchone()
+        # Login by phone number (contact) — fetch ALL members with this phone
+        cur.execute('SELECT * FROM members WHERE contact = %s ORDER BY name', [username])
+        family_members = cur.fetchall()
 
-        if member:
-            # Phone number is default password
-            if password == member['contact'] or password == member['member_id']:
-                # Check if user account exists
-                cur.execute('SELECT * FROM users WHERE username = %s', [member['contact']])
-                user_account = cur.fetchone()
+        if family_members:
+            # Determine password to check: stored user account password, or phone number as default
+            cur.execute('SELECT * FROM users WHERE username = %s', [username])
+            user_account = cur.fetchone()
 
-                if user_account and password == user_account['password']:
-                    pass  # use stored password
-                elif not user_account:
-                    # Create user account with phone as username and password
+            correct_password = user_account['password'] if user_account else username
+
+            if password == correct_password:
+                # Auto-create user account if it doesn't exist yet
+                if not user_account:
                     cur.execute(
                         'INSERT INTO users (username, password, is_admin, role, member_id) VALUES (%s, %s, %s, %s, %s)',
-                        [member['contact'], member['contact'], False, 'member', member['member_id']]
+                        [username, username, False, 'member', family_members[0]['member_id']]
                     )
                     cur.connection.commit()
 
-                # Get all members with this phone number
-                cur.execute('SELECT * FROM members WHERE contact = %s', [username])
-                family_members = cur.fetchall()
                 names = ', '.join([m['name'] for m in family_members])
+                member_ids = [m['member_id'] for m in family_members]
+
                 session['logged_in'] = True
                 session['username'] = names
                 session['contact'] = username
-                session['member_ids'] = [m['member_id'] for m in family_members]
-                session['member_id'] = member['member_id']
+                session['member_ids'] = member_ids
+                session['member_id'] = family_members[0]['member_id']
                 session['is_admin'] = False
                 session['role'] = 'member'
+
+                log_action(names, 'login', 'member', username, f'Member(s) logged in: {names}')
                 flash(f'Welcome {names}!', 'success')
                 cur.close()
                 return redirect(url_for('index'))
-            else:
-                # Check stored password
-                cur.execute('SELECT * FROM users WHERE username = %s', [member['contact']])
-                user_account = cur.fetchone()
-                if user_account and password == user_account['password']:
-                    cur.execute('SELECT * FROM members WHERE contact = %s', [member['contact']])
-                    family_members = cur.fetchall()
-                    names = ', '.join([m['name'] for m in family_members])
-                    session['logged_in'] = True
-                    session['username'] = names
-                    session['contact'] = member['contact']
-                    session['member_ids'] = [m['member_id'] for m in family_members]
-                    session['member_id'] = member['member_id']
-                    session['is_admin'] = False
-                    session['role'] = 'member'
-                    flash(f'Welcome {names}!', 'success')
-                    cur.close()
-                    return redirect(url_for('index'))
 
         cur.close()
         flash('Invalid username or password', 'danger')
-
-    # If already logged in, go to dashboard
-    if 'logged_in' in session:
-        return redirect(url_for('index'))
 
     return render_template('login.html')
 
@@ -346,7 +310,6 @@ def logout():
 @login_required
 def settings():
     if request.method == 'POST':
-        # Check if it's a theme update or password change
         if 'theme' in request.form:
             theme = request.form['theme']
             username = session.get('username')
@@ -371,7 +334,6 @@ def settings():
             cur.close()
             return jsonify({'status': 'success', 'message': 'Theme updated'})
 
-        # Password change logic
         cur = get_cursor()
         current_pwd = request.form['current_password']
         new_pwd = request.form['new_password']
@@ -381,17 +343,15 @@ def settings():
             flash('Passwords do not match', 'danger')
             return redirect(url_for('settings'))
 
-        cur = get_cursor()
-
-        # Get the login username
-        if session.get('role') == 'admin':
+        # Determine the login username for password lookup
+        role = session.get('role')
+        if role == 'admin':
             login_username = 'Admin'
-        elif session.get('role') == 'collector':
+        elif role == 'collector':
             login_username = 'collector'
         else:
-            login_username = session.get('member_id')
+            login_username = session.get('contact', session.get('member_id'))
 
-        # Get user from database
         cur.execute('SELECT * FROM users WHERE username = %s', [login_username])
         user = cur.fetchone()
 
@@ -408,21 +368,6 @@ def settings():
 
 # ============ END LOGIN ROUTES ============
 
-def calculate_interest(loan_date, amount, interest_rate):
-    current_date = date.today()
-    if isinstance(loan_date, str):
-        loan_date_obj = datetime.strptime(loan_date, '%Y-%m-%d').date()
-    elif isinstance(loan_date, datetime):
-        loan_date_obj = loan_date.date()
-    else:
-        loan_date_obj = loan_date
-    months_diff = (current_date.year - loan_date_obj.year) * 12 + (current_date.month - loan_date_obj.month)
-    if months_diff < 0:
-        months_diff = 0
-    interest = (float(amount) * float(interest_rate) * months_diff) / 100
-    return round(interest, 2)
-
-
 @app.route('/')
 @login_required
 def index():
@@ -431,7 +376,6 @@ def index():
     role = session.get('role')
     member_id = session.get('member_id')
 
-    # ADMIN & COLLECTOR: See everything
     if role in ['admin', 'collector']:
         cur.execute('SELECT COUNT(*) as count FROM members')
         total_members = cur.fetchone()['count']
@@ -458,22 +402,27 @@ def index():
                         [member['member_id']])
             member['total_loans'] = float(cur.fetchone()['total'])
 
-    # MEMBER: See all family members (same phone number)
     else:
-        member_ids = session.get('member_ids', [member_id])
+        # MEMBER: show all family members sharing same phone number
+        member_ids = session.get('member_ids', [])
         if not member_ids:
-            member_ids = [member_id]
-        placeholders = ','.join(['%s'] * len(member_ids))
+            member_ids = [member_id] if member_id else []
 
-        cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id IN ({placeholders})', member_ids)
-        total_savings = float(cur.fetchone()['total'])
-        cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM loans WHERE member_id IN ({placeholders})', member_ids)
-        total_loans = float(cur.fetchone()['total'])
+        if member_ids:
+            placeholders = ','.join(['%s'] * len(member_ids))
+            cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id IN ({placeholders})', member_ids)
+            total_savings = float(cur.fetchone()['total'])
+            cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM loans WHERE member_id IN ({placeholders})', member_ids)
+            total_loans = float(cur.fetchone()['total'])
+            cur.execute(f'SELECT * FROM members WHERE member_id IN ({placeholders}) ORDER BY name', member_ids)
+            members = cur.fetchall()
+        else:
+            total_savings = 0.0
+            total_loans = 0.0
+            members = []
+
         total_profit = 0
-        total_members = len(member_ids)
-
-        cur.execute(f'SELECT * FROM members WHERE member_id IN ({placeholders}) ORDER BY name', member_ids)
-        members = cur.fetchall()
+        total_members = len(members)
 
         for member in members:
             cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id = %s', [member['member_id']])
@@ -492,13 +441,14 @@ def index():
 @app.route('/member/<member_id>')
 @login_required
 def view_member(member_id):
-    # Check permissions: Members can only view their own profile
     role = session.get('role')
-    user_member_id = session.get('member_id')
 
-    if role == 'member' and member_id != user_member_id:
-        flash('Access denied! You can only view your own profile.', 'danger')
-        return redirect(url_for('index'))
+    # Members can only view profiles belonging to their family (same phone)
+    if role == 'member':
+        allowed_ids = session.get('member_ids', [session.get('member_id')])
+        if member_id not in allowed_ids:
+            flash('Access denied! You can only view your own profile.', 'danger')
+            return redirect(url_for('index'))
 
     cur = get_cursor()
     cur.execute('SELECT * FROM members WHERE member_id = %s', [member_id])
@@ -506,9 +456,11 @@ def view_member(member_id):
     if not member:
         flash('Member not found', 'danger')
         return redirect(url_for('index'))
+
     cur.execute('SELECT * FROM savings WHERE member_id = %s ORDER BY date DESC', [member_id])
     savings = cur.fetchall()
     total_savings = sum(float(s['amount']) for s in savings)
+
     cur.execute('SELECT * FROM loans WHERE member_id = %s ORDER BY date DESC', [member_id])
     loans = cur.fetchall()
     for loan in loans:
@@ -519,15 +471,15 @@ def view_member(member_id):
         loan['interest_repaid'] = round(sum(float(r.get('interest_paid', 0) or 0) for r in loan['repayments']), 2)
         loan['total_repayments'] = round(loan['principal_repaid'] + loan['interest_repaid'], 2)
         loan['remaining'] = round(loan['amount'] - loan['principal_repaid'], 2)
+
     total_loans = sum(float(l['amount']) for l in loans)
     cur.close()
     return render_template('member_profile.html', member=member, savings=savings, total_savings=total_savings,
-                           loans=loans, total_loans=total_loans,
-                           role=role)
+                           loans=loans, total_loans=total_loans, role=role)
 
 
 @app.route('/add_member', methods=['GET', 'POST'])
-@collector_or_admin_required  # CHANGED: Now Collector can add members!
+@collector_or_admin_required
 def add_member():
     if request.method == 'POST':
         member_id = request.form['member_id'].strip()
@@ -548,14 +500,11 @@ def add_member():
             return redirect(url_for('add_member'))
 
         try:
-            added_by = session.get('username')  # Track who added it
+            added_by = session.get('username')
             cur.execute('INSERT INTO members (member_id, name, address, contact) VALUES (%s, %s, %s, %s)',
                         (member_id, name, address, contact))
             conn.commit()
-
-            # Log the action
             log_action(added_by, 'add', 'member', member_id, f'Added member: {name}')
-
             flash('Member added successfully!', 'success')
             cur.close()
             return redirect(url_for('index'))
@@ -563,11 +512,12 @@ def add_member():
             flash(f'Error: {str(e)}', 'danger')
             cur.close()
             return redirect(url_for('add_member'))
+
     return render_template('add_member.html')
 
 
 @app.route('/edit_member/<member_id>', methods=['GET', 'POST'])
-@admin_required  # Only Admin can EDIT members
+@admin_required
 def edit_member(member_id):
     conn = get_db()
     cur = conn.cursor(row_factory=psycopg.rows.dict_row)
@@ -580,14 +530,12 @@ def edit_member(member_id):
             flash('Please fill in all required fields', 'danger')
             return redirect(url_for('edit_member', member_id=member_id))
         try:
-            # Check if new member_id already exists (if changed)
             if new_member_id != member_id:
                 cur.execute('SELECT member_id FROM members WHERE member_id = %s', [new_member_id])
                 if cur.fetchone():
                     flash('Member ID already exists!', 'danger')
                     cur.close()
                     return redirect(url_for('edit_member', member_id=member_id))
-
             cur.execute('UPDATE members SET member_id = %s, name = %s, address = %s, contact = %s WHERE member_id = %s',
                         (new_member_id, name, address, contact, member_id))
             conn.commit()
@@ -608,7 +556,7 @@ def edit_member(member_id):
 
 
 @app.route('/delete_member/<member_id>')
-@admin_required  # Only Admin can DELETE members
+@admin_required
 def delete_member(member_id):
     conn = get_db()
     cur = conn.cursor(row_factory=psycopg.rows.dict_row)
@@ -620,7 +568,7 @@ def delete_member(member_id):
 
 
 @app.route('/add_savings/<member_id>', methods=['GET', 'POST'])
-@collector_or_admin_required  # CHANGED: Collector can add savings!
+@collector_or_admin_required
 def add_savings(member_id):
     if request.method == 'POST':
         try:
@@ -642,15 +590,12 @@ def add_savings(member_id):
 
             conn = get_db()
             cur = conn.cursor()
-            added_by = session.get('username')  # Track who added it
+            added_by = session.get('username')
             cur.execute(
                 'INSERT INTO savings (member_id, date, amount, added_by, added_at) VALUES (%s, %s, %s, %s, NOW())',
                 (member_id, date, amount_float, added_by))
             conn.commit()
-
-            # Log the action
             log_action(added_by, 'add', 'savings', member_id, f'Added savings: ₹{amount_float}')
-
             cur.close()
             flash('✅ Savings added successfully!', 'success')
             return redirect(url_for('view_member', member_id=member_id))
@@ -669,7 +614,7 @@ def add_savings(member_id):
 
 
 @app.route('/add_loan/<member_id>', methods=['GET', 'POST'])
-@collector_or_admin_required  # CHANGED: Collector can add loans!
+@collector_or_admin_required
 def add_loan(member_id):
     if request.method == 'POST':
         try:
@@ -695,10 +640,7 @@ def add_loan(member_id):
                 'INSERT INTO loans (member_id, date, amount, interest_rate, interest_amount, added_by, added_at) VALUES (%s, %s, %s, %s, 0, %s, NOW())',
                 (member_id, date, amount_float, 0, added_by))
             conn.commit()
-
-            # Log the action
             log_action(added_by, 'add', 'loan', member_id, f'Added loan: ₹{amount_float}')
-
             cur.close()
             flash('✅ Loan added successfully!', 'success')
             return redirect(url_for('view_member', member_id=member_id))
@@ -717,11 +659,9 @@ def add_loan(member_id):
 
 
 @app.route('/edit_loan/<int:loan_id>', methods=['GET', 'POST'])
-@collector_or_admin_required  # Collector can edit within 1 hour
+@collector_or_admin_required
 def edit_loan(loan_id):
     cur = get_cursor()
-
-    # Get the loan record
     cur.execute('SELECT * FROM loans WHERE id = %s', [loan_id])
     loan = cur.fetchone()
 
@@ -730,7 +670,6 @@ def edit_loan(loan_id):
         cur.close()
         return redirect(url_for('index'))
 
-    # Check if user can edit (1 hour rule for collectors)
     if not can_edit_within_hour(loan.get('added_at')):
         flash('Cannot edit! Collector can only edit within 1 hour of adding data.', 'warning')
         cur.close()
@@ -755,15 +694,11 @@ def edit_loan(loan_id):
 
             member_id = loan['member_id']
             edited_by = session.get('username')
-
             cur.execute(
                 'UPDATE loans SET date = %s, amount = %s, last_edited_at = NOW(), last_edited_by = %s WHERE id = %s',
                 (date, amount_float, edited_by, loan_id))
             get_db().commit()
-
-            # Log the action
             log_action(edited_by, 'edit', 'loan', loan_id, f'Edited loan to: ₹{amount_float}')
-
             cur.close()
             flash('Loan updated successfully!', 'success')
             return redirect(url_for('view_member', member_id=member_id))
@@ -777,7 +712,7 @@ def edit_loan(loan_id):
 
 
 @app.route('/delete_loan/<int:loan_id>')
-@admin_required  # Only Admin can DELETE
+@admin_required
 def delete_loan(loan_id):
     conn = get_db()
     cur = conn.cursor(row_factory=psycopg.rows.dict_row)
@@ -796,12 +731,10 @@ def delete_loan(loan_id):
 
 
 @app.route('/edit_savings/<int:savings_id>', methods=['GET', 'POST'])
-@collector_or_admin_required  # Collector can edit within 1 hour
+@collector_or_admin_required
 def edit_savings(savings_id):
     conn = get_db()
     cur = conn.cursor(row_factory=psycopg.rows.dict_row)
-
-    # Get the savings record
     cur.execute('SELECT * FROM savings WHERE id = %s', [savings_id])
     saving = cur.fetchone()
 
@@ -810,7 +743,6 @@ def edit_savings(savings_id):
         cur.close()
         return redirect(url_for('index'))
 
-    # Check if user can edit (1 hour rule for collectors)
     if not can_edit_within_hour(saving.get('added_at')):
         flash('Cannot edit! Collector can only edit within 1 hour of adding data.', 'warning')
         cur.close()
@@ -836,15 +768,11 @@ def edit_savings(savings_id):
 
             member_id = saving['member_id']
             edited_by = session.get('username')
-
             cur.execute(
                 'UPDATE savings SET date = %s, amount = %s, last_edited_at = NOW(), last_edited_by = %s WHERE id = %s',
                 (date, amount_float, edited_by, savings_id))
             conn.commit()
-
-            # Log the action
             log_action(edited_by, 'edit', 'savings', savings_id, f'Edited savings to: ₹{amount_float}')
-
             cur.close()
             flash('Savings updated successfully!', 'success')
             return redirect(url_for('view_member', member_id=member_id))
@@ -858,7 +786,7 @@ def edit_savings(savings_id):
 
 
 @app.route('/delete_savings/<int:savings_id>')
-@admin_required  # Only Admin can DELETE
+@admin_required
 def delete_savings(savings_id):
     conn = get_db()
     cur = conn.cursor(row_factory=psycopg.rows.dict_row)
@@ -877,7 +805,7 @@ def delete_savings(savings_id):
 
 
 @app.route('/add_repayment/<int:loan_id>', methods=['GET', 'POST'])
-@collector_or_admin_required  # Collector can add repayments
+@collector_or_admin_required
 def add_repayment(loan_id):
     if request.method == 'POST':
         try:
@@ -885,16 +813,8 @@ def add_repayment(loan_id):
             principal_paid = request.form.get('principal_paid', '0').strip()
             interest_paid = request.form.get('interest_paid', '0').strip()
 
-            if not principal_paid or principal_paid == '':
-                principal_paid = 0
-            else:
-                principal_paid = round(float(principal_paid), 2)
-
-            if not interest_paid or interest_paid == '':
-                interest_paid = 0
-            else:
-                interest_paid = round(float(interest_paid), 2)
-
+            principal_paid = round(float(principal_paid), 2) if principal_paid else 0
+            interest_paid = round(float(interest_paid), 2) if interest_paid else 0
             total_amount = round(principal_paid + interest_paid, 2)
 
             if not date or total_amount <= 0:
@@ -916,16 +836,13 @@ def add_repayment(loan_id):
                 'INSERT INTO loan_repayments (loan_id, date, principal_paid, interest_paid, total_amount, added_by, added_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())',
                 (loan_id, date, principal_paid, interest_paid, total_amount, added_by))
             conn.commit()
-
-            # Log the action
             log_action(added_by, 'add', 'repayment', loan_id, f'Added repayment: ₹{total_amount}')
-
             cur.close()
             flash('Payment recorded successfully!', 'success')
             return redirect(url_for('view_member', member_id=loan['member_id']))
 
-        except ValueError as e:
-            flash(f'Invalid number format. Please enter valid amounts.', 'danger')
+        except ValueError:
+            flash('Invalid number format. Please enter valid amounts.', 'danger')
             return redirect(url_for('add_repayment', loan_id=loan_id))
         except Exception as e:
             flash(f'Error: {str(e)}', 'danger')
@@ -946,7 +863,7 @@ def add_repayment(loan_id):
     cur.execute('SELECT * FROM loan_repayments WHERE loan_id = %s', [loan_id])
     repayments = cur.fetchall()
     principal_paid = sum(float(r.get('principal_paid', 0)) for r in repayments)
-    principal_remaining = loan['amount'] - principal_paid
+    principal_remaining = round(loan['amount'] - principal_paid, 2)
     cur.close()
     return render_template('add_repayment.html', loan=loan, principal_remaining=principal_remaining,
                            today=datetime.now().strftime('%Y-%m-%d'))
@@ -971,7 +888,7 @@ def savings_report():
 
 
 @app.route('/bulk_savings', methods=['GET', 'POST'])
-@collector_or_admin_required  # Collector can bulk add
+@collector_or_admin_required
 def bulk_savings():
     conn = get_db()
     cur = conn.cursor(row_factory=psycopg.rows.dict_row)
@@ -994,7 +911,7 @@ def bulk_savings():
                             'INSERT INTO savings (member_id, date, amount, added_by, added_at) VALUES (%s, %s, %s, %s, NOW())',
                             (member_id, date, amount, added_by))
                         success_count += 1
-                    except Exception as e:
+                    except Exception:
                         error_count += 1
         conn.commit()
 
@@ -1016,17 +933,36 @@ def bulk_savings():
 @login_required
 def ai_reports():
     cur = get_cursor()
-    cur.execute('SELECT COUNT(*) as count FROM members')
-    total_members = cur.fetchone()['count']
-    cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings')
-    total_savings = float(cur.fetchone()['total'])
-    cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM loans')
-    total_loans = float(cur.fetchone()['total'])
-    cur.execute('SELECT COALESCE(SUM(interest_paid), 0) as total FROM loan_repayments')
-    total_profit = float(cur.fetchone()['total'])
+    role = session.get('role')
+
+    if role in ['admin', 'collector']:
+        cur.execute('SELECT COUNT(*) as count FROM members')
+        total_members = cur.fetchone()['count']
+        cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings')
+        total_savings = float(cur.fetchone()['total'])
+        cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM loans')
+        total_loans = float(cur.fetchone()['total'])
+        cur.execute('SELECT COALESCE(SUM(interest_paid), 0) as total FROM loan_repayments')
+        total_profit = float(cur.fetchone()['total'])
+    else:
+        # Member: only their family stats
+        member_ids = session.get('member_ids', [session.get('member_id')])
+        placeholders = ','.join(['%s'] * len(member_ids))
+        cur.execute(f'SELECT COUNT(*) as count FROM members WHERE member_id IN ({placeholders})', member_ids)
+        total_members = cur.fetchone()['count']
+        cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id IN ({placeholders})', member_ids)
+        total_savings = float(cur.fetchone()['total'])
+        cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM loans WHERE member_id IN ({placeholders})', member_ids)
+        total_loans = float(cur.fetchone()['total'])
+        total_profit = 0
+
     cur.close()
-    context = {'total_members': total_members, 'total_savings': total_savings, 'total_loans': total_loans,
-               'total_profit': total_profit}
+    context = {
+        'total_members': total_members,
+        'total_savings': total_savings,
+        'total_loans': total_loans,
+        'total_profit': total_profit
+    }
     return render_template('ai_reports.html', context=context)
 
 
@@ -1038,169 +974,212 @@ def ai_generate_report():
     report_data = {}
     report_type = 'unknown'
 
+    role = session.get('role')
+    member_ids = session.get('member_ids', [session.get('member_id')]) if role == 'member' else None
+
     try:
         import re
         query = re.sub(r'[^\w\s]', ' ', query)
         query = ' '.join(query.split())
 
+        def member_filter(alias='m'):
+            if member_ids:
+                ph = ','.join(['%s'] * len(member_ids))
+                return f" AND {alias}.member_id IN ({ph})", member_ids
+            return "", []
+
         if any(word in query for word in ['top', 'highest', 'best', 'most', 'maximum', 'max', 'biggest', 'largest']) and \
                 any(word in query for word in ['saver', 'saving', 'savings', 'saved', 'deposit']):
-            cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total FROM members m
-                           LEFT JOIN savings s ON m.member_id = s.member_id GROUP BY m.member_id, m.name 
-                           HAVING COALESCE(SUM(s.amount), 0) > 0 ORDER BY total DESC LIMIT 10''')
+            filt, params = member_filter()
+            cur.execute(f'''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total FROM members m
+                           LEFT JOIN savings s ON m.member_id = s.member_id
+                           WHERE 1=1 {filt}
+                           GROUP BY m.member_id, m.name
+                           HAVING COALESCE(SUM(s.amount), 0) > 0 ORDER BY total DESC LIMIT 10''', params)
             report_data['members'] = cur.fetchall()
             report_type = 'top_savers'
 
-        elif any(word in query for word in
-                 ['top', 'highest', 'best', 'most', 'maximum', 'max', 'biggest', 'largest']) and \
-                any(word in query for word in
-                    ['loan', 'borrow', 'borrowed', 'borrower', 'debt', 'credit', 'taken', 'took']):
-            cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(l.amount), 0) as total FROM members m
-                           LEFT JOIN loans l ON m.member_id = l.member_id GROUP BY m.member_id, m.name 
-                           HAVING COALESCE(SUM(l.amount), 0) > 0 ORDER BY total DESC LIMIT 10''')
+        elif any(word in query for word in ['top', 'highest', 'best', 'most', 'maximum', 'max', 'biggest', 'largest']) and \
+                any(word in query for word in ['loan', 'borrow', 'borrowed', 'borrower', 'debt', 'credit', 'taken', 'took']):
+            filt, params = member_filter()
+            cur.execute(f'''SELECT m.member_id, m.name, COALESCE(SUM(l.amount), 0) as total FROM members m
+                           LEFT JOIN loans l ON m.member_id = l.member_id
+                           WHERE 1=1 {filt}
+                           GROUP BY m.member_id, m.name
+                           HAVING COALESCE(SUM(l.amount), 0) > 0 ORDER BY total DESC LIMIT 10''', params)
             report_data['members'] = cur.fetchall()
             report_type = 'top_borrowers'
 
         elif any(word in query for word in ['lowest', 'minimum', 'min', 'least', 'smallest', 'bottom']) and \
                 any(word in query for word in ['saver', 'saving', 'savings', 'saved', 'deposit']):
-            cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total FROM members m
-                           LEFT JOIN savings s ON m.member_id = s.member_id GROUP BY m.member_id, m.name 
-                           HAVING COALESCE(SUM(s.amount), 0) > 0 ORDER BY total ASC LIMIT 10''')
+            filt, params = member_filter()
+            cur.execute(f'''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total FROM members m
+                           LEFT JOIN savings s ON m.member_id = s.member_id
+                           WHERE 1=1 {filt}
+                           GROUP BY m.member_id, m.name
+                           HAVING COALESCE(SUM(s.amount), 0) > 0 ORDER BY total ASC LIMIT 10''', params)
             report_data['members'] = cur.fetchall()
             report_type = 'lowest_savers'
 
         elif any(phrase in query for phrase in
                  ['without saving', 'no saving', 'zero saving', 'not saved', 'havent saved',
                   'didnt save', 'never saved', 'no deposit', 'without deposit']):
-            cur.execute('''SELECT m.member_id, m.name, m.contact FROM members m 
+            filt, params = member_filter()
+            cur.execute(f'''SELECT m.member_id, m.name, m.contact FROM members m
                            LEFT JOIN savings s ON m.member_id = s.member_id
-                           GROUP BY m.member_id, m.name, m.contact 
-                           HAVING COALESCE(SUM(s.amount), 0) = 0''')
+                           WHERE 1=1 {filt}
+                           GROUP BY m.member_id, m.name, m.contact
+                           HAVING COALESCE(SUM(s.amount), 0) = 0''', params)
             report_data['members'] = cur.fetchall()
             report_type = 'no_savings'
 
         elif any(word in query for word in ['outstanding', 'pending', 'due', 'unpaid', 'not paid', 'havent paid',
                                             'didnt pay', 'remaining', 'balance', 'owe', 'owes', 'owing']):
-            cur.execute('''SELECT m.member_id, m.name, l.id as loan_id, l.amount, l.date, 
+            filt, params = member_filter()
+            cur.execute(f'''SELECT m.member_id, m.name, l.id as loan_id, l.amount, l.date,
                            COALESCE(SUM(lr.principal_paid), 0) as repaid
-                           FROM members m JOIN loans l ON m.member_id = l.member_id 
+                           FROM members m JOIN loans l ON m.member_id = l.member_id
                            LEFT JOIN loan_repayments lr ON l.id = lr.loan_id
-                           GROUP BY m.member_id, m.name, l.id, l.amount, l.date 
-                           HAVING l.amount > COALESCE(SUM(lr.principal_paid), 0)''')
+                           WHERE 1=1 {filt}
+                           GROUP BY m.member_id, m.name, l.id, l.amount, l.date
+                           HAVING l.amount > COALESCE(SUM(lr.principal_paid), 0)''', params)
             report_data['loans'] = cur.fetchall()
             report_type = 'outstanding_loans'
 
         elif any(word in query for word in ['paid', 'completed', 'finished', 'cleared', 'settled', 'closed']) and \
                 any(word in query for word in ['loan', 'loans']):
-            cur.execute('''SELECT m.member_id, m.name, l.id as loan_id, l.amount, l.date,
+            filt, params = member_filter()
+            cur.execute(f'''SELECT m.member_id, m.name, l.id as loan_id, l.amount, l.date,
                            COALESCE(SUM(lr.principal_paid), 0) as repaid
-                           FROM members m JOIN loans l ON m.member_id = l.member_id 
+                           FROM members m JOIN loans l ON m.member_id = l.member_id
                            LEFT JOIN loan_repayments lr ON l.id = lr.loan_id
-                           GROUP BY m.member_id, m.name, l.id, l.amount, l.date 
-                           HAVING l.amount <= COALESCE(SUM(lr.principal_paid), 0)''')
+                           WHERE 1=1 {filt}
+                           GROUP BY m.member_id, m.name, l.id, l.amount, l.date
+                           HAVING l.amount <= COALESCE(SUM(lr.principal_paid), 0)''', params)
             report_data['loans'] = cur.fetchall()
             report_type = 'paid_loans'
 
         elif any(word in query for word in ['monthly', 'month', 'months', 'per month']) and \
                 any(word in query for word in ['saving', 'savings', 'saved', 'deposit']):
-            cur.execute('''SELECT TO_CHAR(date, 'YYYY-MM') as month, COUNT(*) as transactions, 
-                           SUM(amount) as total FROM savings 
-                           GROUP BY month ORDER BY month DESC LIMIT 12''')
+            if member_ids:
+                ph = ','.join(['%s'] * len(member_ids))
+                cur.execute(f'''SELECT TO_CHAR(date, 'YYYY-MM') as month, COUNT(*) as transactions,
+                               SUM(amount) as total FROM savings
+                               WHERE member_id IN ({ph})
+                               GROUP BY month ORDER BY month DESC LIMIT 12''', member_ids)
+            else:
+                cur.execute('''SELECT TO_CHAR(date, 'YYYY-MM') as month, COUNT(*) as transactions,
+                               SUM(amount) as total FROM savings
+                               GROUP BY month ORDER BY month DESC LIMIT 12''')
             report_data['monthly'] = cur.fetchall()
             report_type = 'monthly_savings'
 
         elif any(word in query for word in ['monthly', 'month', 'months', 'per month']) and \
                 any(word in query for word in ['loan', 'loans', 'borrowed', 'borrow']):
-            cur.execute('''SELECT TO_CHAR(date, 'YYYY-MM') as month, COUNT(*) as loans_given, 
-                           SUM(amount) as total FROM loans 
-                           GROUP BY month ORDER BY month DESC LIMIT 12''')
+            if member_ids:
+                ph = ','.join(['%s'] * len(member_ids))
+                cur.execute(f'''SELECT TO_CHAR(date, 'YYYY-MM') as month, COUNT(*) as loans_given,
+                               SUM(amount) as total FROM loans
+                               WHERE member_id IN ({ph})
+                               GROUP BY month ORDER BY month DESC LIMIT 12''', member_ids)
+            else:
+                cur.execute('''SELECT TO_CHAR(date, 'YYYY-MM') as month, COUNT(*) as loans_given,
+                               SUM(amount) as total FROM loans
+                               GROUP BY month ORDER BY month DESC LIMIT 12''')
             report_data['monthly'] = cur.fetchall()
             report_type = 'monthly_loans'
 
         elif any(word in query for word in ['recent', 'latest', 'last', 'new']) and \
                 any(word in query for word in ['saving', 'savings', 'saved', 'deposit', 'transaction']):
-            cur.execute('''SELECT s.date, m.name, s.amount FROM savings s 
-                           JOIN members m ON s.member_id = m.member_id
-                           ORDER BY s.date DESC, s.created_at DESC LIMIT 20''')
+            if member_ids:
+                ph = ','.join(['%s'] * len(member_ids))
+                cur.execute(f'''SELECT s.date, m.name, s.amount FROM savings s
+                               JOIN members m ON s.member_id = m.member_id
+                               WHERE s.member_id IN ({ph})
+                               ORDER BY s.date DESC, s.created_at DESC LIMIT 20''', member_ids)
+            else:
+                cur.execute('''SELECT s.date, m.name, s.amount FROM savings s
+                               JOIN members m ON s.member_id = m.member_id
+                               ORDER BY s.date DESC, s.created_at DESC LIMIT 20''')
             report_data['transactions'] = cur.fetchall()
             report_type = 'recent_savings'
 
         elif any(word in query for word in ['recent', 'latest', 'last', 'new']) and \
                 any(word in query for word in ['loan', 'loans', 'borrowed', 'borrow']):
-            cur.execute('''SELECT l.date, m.name, l.amount, l.interest_rate FROM loans l 
-                           JOIN members m ON l.member_id = m.member_id
-                           ORDER BY l.date DESC, l.created_at DESC LIMIT 20''')
+            if member_ids:
+                ph = ','.join(['%s'] * len(member_ids))
+                cur.execute(f'''SELECT l.date, m.name, l.amount FROM loans l
+                               JOIN members m ON l.member_id = m.member_id
+                               WHERE l.member_id IN ({ph})
+                               ORDER BY l.date DESC, l.created_at DESC LIMIT 20''', member_ids)
+            else:
+                cur.execute('''SELECT l.date, m.name, l.amount FROM loans l
+                               JOIN members m ON l.member_id = m.member_id
+                               ORDER BY l.date DESC, l.created_at DESC LIMIT 20''')
             report_data['loans_recent'] = cur.fetchall()
             report_type = 'recent_loans'
 
         elif any(word in query for word in ['profit', 'interest', 'income', 'earn', 'earned', 'earnings']):
-            cur.execute('''SELECT TO_CHAR(lr.date, 'YYYY-MM') as month, 
+            cur.execute('''SELECT TO_CHAR(lr.date, 'YYYY-MM') as month,
                            SUM(lr.interest_paid) as interest_earned
-                           FROM loan_repayments lr 
+                           FROM loan_repayments lr
                            GROUP BY month ORDER BY month DESC LIMIT 12''')
             report_data['monthly'] = cur.fetchall()
             cur.execute('SELECT COALESCE(SUM(interest_paid), 0) as total FROM loan_repayments')
             report_data['total_profit'] = float(cur.fetchone()['total'])
             report_type = 'profit_report'
 
-        elif any(word in query for word in ['total', 'all', 'entire', 'complete']) and \
-                any(word in query for word in ['saving', 'savings', 'saved']):
-            cur.execute('''SELECT COUNT(DISTINCT member_id) as active_savers, 
-                           COUNT(*) as total_transactions,
-                           SUM(amount) as total_amount, AVG(amount) as avg_amount, 
-                           MIN(amount) as min_amount, MAX(amount) as max_amount
-                           FROM savings''')
-            report_data['summary'] = cur.fetchone()
-            report_type = 'savings_summary'
-
-        elif any(word in query for word in ['total', 'all', 'entire', 'complete']) and \
-                any(word in query for word in ['loan', 'loans', 'borrowed']):
-            cur.execute('''SELECT COUNT(*) as total_loans, SUM(l.amount) as total_amount, 
-                           SUM(COALESCE(lr.principal_paid, 0)) as total_repaid,
-                           SUM(l.amount) - SUM(COALESCE(lr.principal_paid, 0)) as outstanding 
-                           FROM loans l
-                           LEFT JOIN (SELECT loan_id, SUM(principal_paid) as principal_paid 
-                                      FROM loan_repayments GROUP BY loan_id) lr
-                           ON l.id = lr.loan_id''')
-            report_data['summary'] = cur.fetchone()
-            report_type = 'loans_summary'
-
         elif any(word in query for word in ['all', 'list', 'show']) and \
                 any(word in query for word in ['member', 'members', 'people', 'person']):
-            cur.execute('''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total_savings, 
+            filt, params = member_filter()
+            cur.execute(f'''SELECT m.member_id, m.name, COALESCE(SUM(s.amount), 0) as total_savings,
                            COALESCE(SUM(l.amount), 0) as total_loans
-                           FROM members m 
-                           LEFT JOIN savings s ON m.member_id = s.member_id 
+                           FROM members m
+                           LEFT JOIN savings s ON m.member_id = s.member_id
                            LEFT JOIN loans l ON m.member_id = l.member_id
-                           GROUP BY m.member_id, m.name ORDER BY m.name''')
+                           WHERE 1=1 {filt}
+                           GROUP BY m.member_id, m.name ORDER BY m.name''', params)
             report_data['members'] = cur.fetchall()
             report_type = 'all_members'
 
         elif any(word in query for word in ['summary', 'overview', 'dashboard', 'stats', 'statistics', 'report']):
-            cur.execute('SELECT COUNT(*) as count FROM members')
-            report_data['total_members'] = cur.fetchone()['count']
-            cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings')
-            report_data['total_savings'] = float(cur.fetchone()['total'])
-            cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM loans')
-            report_data['total_loans'] = float(cur.fetchone()['total'])
-            cur.execute('SELECT COALESCE(SUM(interest_paid), 0) as total FROM loan_repayments')
-            report_data['total_profit'] = float(cur.fetchone()['total'])
+            if member_ids:
+                ph = ','.join(['%s'] * len(member_ids))
+                cur.execute(f'SELECT COUNT(*) as count FROM members WHERE member_id IN ({ph})', member_ids)
+                report_data['total_members'] = cur.fetchone()['count']
+                cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id IN ({ph})', member_ids)
+                report_data['total_savings'] = float(cur.fetchone()['total'])
+                cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM loans WHERE member_id IN ({ph})', member_ids)
+                report_data['total_loans'] = float(cur.fetchone()['total'])
+                report_data['total_profit'] = 0
+            else:
+                cur.execute('SELECT COUNT(*) as count FROM members')
+                report_data['total_members'] = cur.fetchone()['count']
+                cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings')
+                report_data['total_savings'] = float(cur.fetchone()['total'])
+                cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM loans')
+                report_data['total_loans'] = float(cur.fetchone()['total'])
+                cur.execute('SELECT COALESCE(SUM(interest_paid), 0) as total FROM loan_repayments')
+                report_data['total_profit'] = float(cur.fetchone()['total'])
             report_type = 'summary'
 
         elif 'active' in query or 'inactive' in query:
+            filt, params = member_filter()
             if 'inactive' in query:
-                cur.execute('''SELECT m.member_id, m.name, m.contact FROM members m 
+                cur.execute(f'''SELECT m.member_id, m.name, m.contact FROM members m
                                LEFT JOIN savings s ON m.member_id = s.member_id
-                               WHERE s.id IS NULL OR s.date < CURRENT_DATE - INTERVAL '3 months'
-                               GROUP BY m.member_id, m.name, m.contact''')
+                               WHERE 1=1 {filt}
+                               GROUP BY m.member_id, m.name, m.contact
+                               HAVING MAX(s.date) IS NULL OR MAX(s.date) < CURRENT_DATE - INTERVAL '3 months' ''', params)
                 report_data['members'] = cur.fetchall()
                 report_type = 'inactive_members'
             else:
-                cur.execute('''SELECT m.member_id, m.name, MAX(s.date) as last_transaction FROM members m 
+                cur.execute(f'''SELECT m.member_id, m.name, MAX(s.date) as last_transaction FROM members m
                                JOIN savings s ON m.member_id = s.member_id
+                               WHERE 1=1 {filt}
                                GROUP BY m.member_id, m.name
                                HAVING MAX(s.date) >= CURRENT_DATE - INTERVAL '3 months'
-                               ORDER BY last_transaction DESC''')
+                               ORDER BY last_transaction DESC''', params)
                 report_data['members'] = cur.fetchall()
                 report_type = 'active_members'
 
@@ -1216,6 +1195,12 @@ def ai_generate_report():
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/setup-db-x7k2')
+def setup_db():
+    init_db()
+    return 'Database initialized!'
+
+
 if __name__ == '__main__':
     with app.app_context():
         init_db()
@@ -1223,6 +1208,6 @@ if __name__ == '__main__':
     print("Church Savings Management System Starting...")
     print("=" * 60)
     print("Open: http://localhost:5000")
-    print("Login: Admin / z | collector / z | member via MEMBER_ID / z")
+    print("Login: Admin / z | collector / z | member via phone / phone")
     print("=" * 60 + "\n")
     app.run(host='0.0.0.0', port=5000)
