@@ -241,17 +241,31 @@ def login():
 
         if user and password == user['password']:
             session['logged_in'] = True
-            session['username'] = user['username']
             session['is_admin'] = user.get('is_admin', False)
             session['role'] = user.get('role', 'member')
             session['member_id'] = user.get('member_id')
             log_action(username, 'login', 'user', username, 'User logged in')
             if session['role'] == 'admin':
+                session['username'] = user['username']
                 flash('Welcome Admin! You have full access.', 'success')
             elif session['role'] == 'collector':
+                session['username'] = user['username']
                 flash('Welcome Collector! You can add/edit data (1-hour edit window).', 'success')
             else:
-                flash('Welcome!', 'success')
+                # Member account — fetch all family members sharing the same phone number
+                contact = username  # username is the phone number used to log in
+                cur.execute('SELECT * FROM members WHERE contact = %s ORDER BY name', [contact])
+                family_members = cur.fetchall()
+                if family_members:
+                    names = ', '.join([m['name'] for m in family_members])
+                    session['username'] = names
+                    session['contact'] = contact
+                    session['member_ids'] = [m['member_id'] for m in family_members]
+                    session['member_id'] = family_members[0]['member_id']
+                else:
+                    session['username'] = user['username']
+                    session['member_ids'] = [user['member_id']] if user.get('member_id') else []
+                flash(f'Welcome {session["username"]}!', 'success')
             cur.close()
             return redirect(url_for('index'))
 
