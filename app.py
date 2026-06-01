@@ -269,39 +269,50 @@ def login():
                 cur.close()
                 return redirect(url_for('index'))
 
-        cur.execute('SELECT * FROM members WHERE member_id = %s', [username])
+        # Login by phone number (contact)
+        cur.execute('SELECT * FROM members WHERE contact = %s', [username])
         member = cur.fetchone()
 
         if member:
-            # Check if user account exists for this member
-            cur.execute('SELECT * FROM users WHERE username = %s', [member['member_id']])
-            user_account = cur.fetchone()
+            # Phone number is default password
+            if password == member['contact'] or password == member['member_id']:
+                # Check if user account exists
+                cur.execute('SELECT * FROM users WHERE username = %s', [member['contact']])
+                user_account = cur.fetchone()
 
-            if user_account and password == user_account['password']:
+                if user_account and password == user_account['password']:
+                    pass  # use stored password
+                elif not user_account:
+                    # Create user account with phone as username and password
+                    cur.execute(
+                        'INSERT INTO users (username, password, is_admin, role, member_id) VALUES (%s, %s, %s, %s, %s)',
+                        [member['contact'], member['contact'], False, 'member', member['member_id']]
+                    )
+                    cur.connection.commit()
+
                 session['logged_in'] = True
                 session['username'] = member['name']
                 session['member_id'] = member['member_id']
+                session['contact'] = member['contact']
                 session['is_admin'] = False
                 session['role'] = 'member'
                 flash(f'Welcome {member["name"]}!', 'success')
                 cur.close()
                 return redirect(url_for('index'))
-            elif password == 'z':
-                # First time login - create user account
-                cur.execute(
-                    'INSERT INTO users (username, password, is_admin, role, member_id) VALUES (%s, %s, %s, %s, %s)',
-                    [member['member_id'], 'z', False, 'member', member['member_id']]
-                )
-                cur.connection.commit()
-
-                session['logged_in'] = True
-                session['username'] = member['name']
-                session['member_id'] = member['member_id']
-                session['is_admin'] = False
-                session['role'] = 'member'
-                flash(f'Welcome {member["name"]}! Please change your password.', 'info')
-                cur.close()
-                return redirect(url_for('settings'))
+            else:
+                # Check stored password
+                cur.execute('SELECT * FROM users WHERE username = %s', [member['contact']])
+                user_account = cur.fetchone()
+                if user_account and password == user_account['password']:
+                    session['logged_in'] = True
+                    session['username'] = member['name']
+                    session['member_id'] = member['member_id']
+                    session['contact'] = member['contact']
+                    session['is_admin'] = False
+                    session['role'] = 'member'
+                    flash(f'Welcome {member["name"]}!', 'success')
+                    cur.close()
+                    return redirect(url_for('index'))
 
         cur.close()
         flash('Invalid username or password', 'danger')
@@ -508,8 +519,8 @@ def add_member():
         address = request.form['address'].strip()
         contact = request.form.get('contact', '').strip()
 
-        if not member_id or not name or not address:
-            flash('Please fill in all required fields', 'danger')
+        if not member_id or not name or not address or not contact:
+            flash('Please fill in all required fields including phone number', 'danger')
             return redirect(url_for('add_member'))
 
         conn = get_db()
