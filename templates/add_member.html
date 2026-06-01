@@ -67,8 +67,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><i class="fas fa-phone"></i> Contact Number</label>
-                        <input type="tel" name="contact" id="member_contact" class="form-control" placeholder="e.g., 9876543210 (Optional)">
+                        <label class="form-label"><i class="fas fa-phone"></i> Phone Number *</label>
+                        <input type="tel" name="contact" id="member_contact" class="form-control" placeholder="e.g., 9876543210" required>
+                        <small class="text-muted">This will be used as login username and default password</small>
                         <small class="text-muted">Must be exactly 10 digits (optional)</small>
                     </div>
 
@@ -103,7 +104,7 @@
                     }
                     
                     // Validate contact if provided
-                    if (contact && contact.length > 0) {
+                    if (true) {
                         // Must be exactly 10 digits
                         if (!/^\d{10}$/.test(contact)) {
                             alert('❌ Invalid Phone Number!\n\nPhone number must be:\n✓ Exactly 10 digits\n✓ Only numbers (0-9)\n\nExample: 9842041235');
