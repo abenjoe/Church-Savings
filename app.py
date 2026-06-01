@@ -290,13 +290,18 @@ def login():
                     )
                     cur.connection.commit()
 
+                # Get all members with this phone number
+                cur.execute('SELECT * FROM members WHERE contact = %s', [username])
+                family_members = cur.fetchall()
+                names = ', '.join([m['name'] for m in family_members])
                 session['logged_in'] = True
-                session['username'] = member['name']
+                session['username'] = names
+                session['contact'] = username
+                session['member_ids'] = [m['member_id'] for m in family_members]
                 session['member_id'] = member['member_id']
-                session['contact'] = member['contact']
                 session['is_admin'] = False
                 session['role'] = 'member'
-                flash(f'Welcome {member["name"]}!', 'success')
+                flash(f'Welcome {names}!', 'success')
                 cur.close()
                 return redirect(url_for('index'))
             else:
@@ -304,13 +309,17 @@ def login():
                 cur.execute('SELECT * FROM users WHERE username = %s', [member['contact']])
                 user_account = cur.fetchone()
                 if user_account and password == user_account['password']:
+                    cur.execute('SELECT * FROM members WHERE contact = %s', [member['contact']])
+                    family_members = cur.fetchall()
+                    names = ', '.join([m['name'] for m in family_members])
                     session['logged_in'] = True
-                    session['username'] = member['name']
-                    session['member_id'] = member['member_id']
+                    session['username'] = names
                     session['contact'] = member['contact']
+                    session['member_ids'] = [m['member_id'] for m in family_members]
+                    session['member_id'] = member['member_id']
                     session['is_admin'] = False
                     session['role'] = 'member'
-                    flash(f'Welcome {member["name"]}!', 'success')
+                    flash(f'Welcome {names}!', 'success')
                     cur.close()
                     return redirect(url_for('index'))
 
@@ -449,21 +458,28 @@ def index():
                         [member['member_id']])
             member['total_loans'] = float(cur.fetchone()['total'])
 
-    # MEMBER: See only own data
+    # MEMBER: See all family members (same phone number)
     else:
-        total_members = 1
-        cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id = %s', [member_id])
+        member_ids = session.get('member_ids', [member_id])
+        if not member_ids:
+            member_ids = [member_id]
+        placeholders = ','.join(['%s'] * len(member_ids))
+
+        cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id IN ({placeholders})', member_ids)
         total_savings = float(cur.fetchone()['total'])
-        cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM loans WHERE member_id = %s', [member_id])
+        cur.execute(f'SELECT COALESCE(SUM(amount), 0) as total FROM loans WHERE member_id IN ({placeholders})', member_ids)
         total_loans = float(cur.fetchone()['total'])
         total_profit = 0
+        total_members = len(member_ids)
 
-        cur.execute('SELECT * FROM members WHERE member_id = %s', [member_id])
+        cur.execute(f'SELECT * FROM members WHERE member_id IN ({placeholders}) ORDER BY name', member_ids)
         members = cur.fetchall()
 
         for member in members:
-            member['total_savings'] = total_savings
-            member['total_loans'] = total_loans
+            cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE member_id = %s', [member['member_id']])
+            member['total_savings'] = float(cur.fetchone()['total'])
+            cur.execute('SELECT COALESCE(SUM(amount), 0) as total FROM loans WHERE member_id = %s', [member['member_id']])
+            member['total_loans'] = float(cur.fetchone()['total'])
 
         search_query = ''
 
