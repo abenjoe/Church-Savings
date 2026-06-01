@@ -784,6 +784,40 @@
                     html += '</tbody></table>';
                     break;
 
+
+                case 'member_savings':
+                    html = '<p><strong>💰 Your Savings:</strong></p>';
+                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value" style="color: #10b981;">₹${parseFloat(data.total || 0).toFixed(2)}</span></div>`;
+                    if (data.transactions && data.transactions.length > 0) {
+                        html += '<table class="report-table"><thead><tr><th>Date</th><th>Name</th><th>Amount</th></tr></thead><tbody>';
+                        data.transactions.forEach(t => {
+                            html += `<tr><td>${new Date(t.date).toLocaleDateString()}</td><td>${t.name}</td><td style="color:#10b981;">₹${parseFloat(t.amount).toFixed(2)}</td></tr>`;
+                        });
+                        html += '</tbody></table>';
+                    }
+                    break;
+
+                case 'member_loans':
+                    html = '<p><strong>💵 Your Loans:</strong></p>';
+                    if (data.loans && data.loans.length > 0) {
+                        html += '<table class="report-table"><thead><tr><th>Name</th><th>Date</th><th>Amount</th><th>Repaid</th><th>Remaining</th></tr></thead><tbody>';
+                        data.loans.forEach(l => {
+                            const remaining = parseFloat(l.amount) - parseFloat(l.repaid || 0);
+                            html += `<tr><td>${l.name}</td><td>${new Date(l.date).toLocaleDateString()}</td><td>₹${parseFloat(l.amount).toFixed(2)}</td><td style="color:#10b981;">₹${parseFloat(l.repaid||0).toFixed(2)}</td><td style="color:#ef4444;">₹${remaining.toFixed(2)}</td></tr>`;
+                        });
+                        html += '</tbody></table>';
+                    } else {
+                        html += '<p style="color:#10b981;">✅ No loans found.</p>';
+                    }
+                    break;
+
+                case 'member_summary':
+                    html = '<p><strong>📊 Your Summary:</strong></p>';
+                    html += `<div class="stat-box"><span class="stat-label">Members</span><span class="stat-value">${data.total_members || 1}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value" style="color:#10b981;">₹${parseFloat(data.total_savings||0).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color:#f59e0b;"><span class="stat-label">Total Loans</span><span class="stat-value" style="color:#f59e0b;">₹${parseFloat(data.total_loans||0).toFixed(2)}</span></div>`;
+                    break;
+
                 case 'summary':
                     html = '<p><strong>📊 Overall Summary:</strong></p>';
                     html += `<div class="stat-box" style="border-left-color: #3b82f6;"><span class="stat-label">Members</span><span class="stat-value" style="color: #3b82f6;">${data.total_members}</span></div>`;
