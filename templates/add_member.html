@@ -53,6 +53,7 @@
                 <p class="text-muted mb-4">Fill in the details to register a new church member</p>
                 
                 <form method="POST" action="{{ url_for('add_member') }}" onsubmit="return validateMemberForm()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-id-badge"></i> Member ID *</label>
                         <input type="text" name="member_id" class="form-control" required placeholder="e.g., 1001, 2025001">
