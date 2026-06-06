@@ -320,7 +320,7 @@
                                 <td style="text-align: center; color: #9ca3af; font-weight: 600;">{{ loop.index }}</td>
                                 <td class="member-id-cell">{{ member.member_id }}</td>
                                 <td class="member-name-cell">{{ member.name }}</td>
-                                <td class="total-savings-cell">₹{{ "{:,.2f}".format(member.total_savings) }}</td>
+                                <td class="total-savings-cell">₹{{ "{:,.0f}".format(member.total_savings) }}</td>
                                 <td class="last-savings-cell">
                                     {% if member.last_savings_date %}
                                         <i class="fas fa-calendar-check"></i> {{ member.last_savings_date.strftime('%d %b %Y') }}
@@ -387,7 +387,7 @@
             });
             
             document.getElementById('membersCount').textContent = count;
-            document.getElementById('totalAmount').textContent = '₹' + total.toFixed(2);
+            document.getElementById('totalAmount').textContent = '₹' + total.toFixed(0);
         }
         
         function fillAllAmounts() {
