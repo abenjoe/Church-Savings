@@ -649,7 +649,7 @@
                     html = '<p><strong>🏆 Top Savers:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
                     data.members.forEach((m, i) => {
-                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -658,7 +658,7 @@
                     html = '<p><strong>💰 Top Borrowers:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
                     data.members.forEach((m, i) => {
-                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -667,7 +667,7 @@
                     html = '<p><strong>📉 Lowest Savers:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th>Total</th></tr></thead><tbody>';
                     data.members.forEach((m, i) => {
-                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${i+1}</td><td>${m.id}</td><td>${m.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -690,7 +690,7 @@
                     html += '<table class="report-table"><thead><tr><th>Member</th><th>Loan</th><th>Repaid</th><th>Balance</th></tr></thead><tbody>';
                     data.loans.forEach(l => {
                         const balance = parseFloat(l.amount) - parseFloat(l.repaid);
-                        html += `<tr><td>${l.name}</td><td>₹${parseFloat(l.amount).toFixed(2)}</td><td style="color: #10b981;">₹${parseFloat(l.repaid).toFixed(2)}</td><td style="color: #ef4444; font-weight: 700;">₹${balance.toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${l.name}</td><td>₹${parseFloat(l.amount).toFixed(0)}</td><td style="color: #10b981;">₹${parseFloat(l.repaid).toFixed(0)}</td><td style="color: #ef4444; font-weight: 700;">₹${balance.toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -700,7 +700,7 @@
                     if (data.loans.length > 0) {
                         html += '<table class="report-table"><thead><tr><th>Member</th><th>Loan Amount</th><th>Repaid</th><th>Date</th></tr></thead><tbody>';
                         data.loans.forEach(l => {
-                            html += `<tr><td>${l.name}</td><td>₹${parseFloat(l.amount).toFixed(2)}</td><td style="color: #10b981; font-weight: 700;">₹${parseFloat(l.repaid).toFixed(2)}</td><td>${l.date}</td></tr>`;
+                            html += `<tr><td>${l.name}</td><td>₹${parseFloat(l.amount).toFixed(0)}</td><td style="color: #10b981; font-weight: 700;">₹${parseFloat(l.repaid).toFixed(0)}</td><td>${l.date}</td></tr>`;
                         });
                         html += '</tbody></table>';
                     } else {
@@ -712,7 +712,7 @@
                     html = `<p><strong>👥 All Members (${data.members.length}):</strong></p>`;
                     html += '<table class="report-table"><thead><tr><th>ID</th><th>Name</th><th>Savings</th><th>Loans</th></tr></thead><tbody>';
                     data.members.forEach(m => {
-                        html += `<tr><td>${m.id}</td><td>${m.name}</td><td style="color: #059669;">₹${parseFloat(m.total_savings).toFixed(2)}</td><td style="color: #f59e0b;">₹${parseFloat(m.total_loans).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${m.id}</td><td>${m.name}</td><td style="color: #059669;">₹${parseFloat(m.total_savings).toFixed(0)}</td><td style="color: #f59e0b;">₹${parseFloat(m.total_loans).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -721,7 +721,7 @@
                     html = '<p><strong>📊 Monthly Savings:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Month</th><th>Transactions</th><th>Total</th></tr></thead><tbody>';
                     data.monthly.forEach(m => {
-                        html += `<tr><td>${m.month}</td><td>${m.transactions}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${m.month}</td><td>${m.transactions}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(m.total).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -730,7 +730,7 @@
                     html = '<p><strong>🕒 Recent Savings:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Date</th><th>Member</th><th>Amount</th></tr></thead><tbody>';
                     data.transactions.forEach(t => {
-                        html += `<tr><td>${t.date}</td><td>${t.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(t.amount).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${t.date}</td><td>${t.name}</td><td style="color: #059669; font-weight: 700;">₹${parseFloat(t.amount).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -740,15 +740,15 @@
                     html = '<p><strong>💰 Savings Summary:</strong></p>';
                     html += `<div class="stat-box"><span class="stat-label">Active Savers</span><span class="stat-value">${s.active_savers}</span></div>`;
                     html += `<div class="stat-box"><span class="stat-label">Transactions</span><span class="stat-value">${s.total_transactions}</span></div>`;
-                    html += `<div class="stat-box"><span class="stat-label">Total</span><span class="stat-value">₹${parseFloat(s.total_amount).toFixed(2)}</span></div>`;
-                    html += `<div class="stat-box"><span class="stat-label">Average</span><span class="stat-value">₹${parseFloat(s.avg_amount).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Total</span><span class="stat-value">₹${parseFloat(s.total_amount).toFixed(0)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Average</span><span class="stat-value">₹${parseFloat(s.avg_amount).toFixed(0)}</span></div>`;
                     break;
 
                 case 'monthly_loans':
                     html = '<p><strong>📊 Monthly Loans:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Month</th><th>Loans Given</th><th>Total</th></tr></thead><tbody>';
                     data.monthly.forEach(m => {
-                        html += `<tr><td>${m.month}</td><td>${m.loans_given}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${m.month}</td><td>${m.loans_given}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(m.total).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -757,7 +757,7 @@
                     html = '<p><strong>🕒 Recent Loans Issued:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Date</th><th>Member</th><th>Amount</th><th>Interest Rate</th></tr></thead><tbody>';
                     data.loans_recent.forEach(l => {
-                        html += `<tr><td>${l.date}</td><td>${l.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(l.amount).toFixed(2)}</td><td>${l.interest_rate}%</td></tr>`;
+                        html += `<tr><td>${l.date}</td><td>${l.name}</td><td style="color: #f59e0b; font-weight: 700;">₹${parseFloat(l.amount).toFixed(0)}</td><td>${l.interest_rate}%</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -766,20 +766,20 @@
                     const l = data.summary;
                     html = '<p><strong>💰 Loans Summary:</strong></p>';
                     html += `<div class="stat-box"><span class="stat-label">Total Loans</span><span class="stat-value">${l.total_loans}</span></div>`;
-                    html += `<div class="stat-box"><span class="stat-label">Amount Given</span><span class="stat-value">₹${parseFloat(l.total_amount).toFixed(2)}</span></div>`;
-                    html += `<div class="stat-box"><span class="stat-label">Repaid</span><span class="stat-value">₹${parseFloat(l.total_repaid).toFixed(2)}</span></div>`;
-                    html += `<div class="stat-box" style="border-left-color: #ef4444;"><span class="stat-label">Outstanding</span><span class="stat-value" style="color: #ef4444;">₹${parseFloat(l.outstanding).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Amount Given</span><span class="stat-value">₹${parseFloat(l.total_amount).toFixed(0)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Repaid</span><span class="stat-value">₹${parseFloat(l.total_repaid).toFixed(0)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color: #ef4444;"><span class="stat-label">Outstanding</span><span class="stat-value" style="color: #ef4444;">₹${parseFloat(l.outstanding).toFixed(0)}</span></div>`;
                     break;
 
                 case 'profit_report':
                     html = '<p><strong>💵 Profit/Interest Report:</strong></p>';
                     if (data.total_profit) {
-                        html += `<div class="stat-box" style="border-left-color: #8b5cf6; margin-bottom: 1rem;"><span class="stat-label">Total Profit Earned</span><span class="stat-value" style="color: #8b5cf6;">₹${parseFloat(data.total_profit).toFixed(2)}</span></div>`;
+                        html += `<div class="stat-box" style="border-left-color: #8b5cf6; margin-bottom: 1rem;"><span class="stat-label">Total Profit Earned</span><span class="stat-value" style="color: #8b5cf6;">₹${parseFloat(data.total_profit).toFixed(0)}</span></div>`;
                     }
                     html += '<p style="margin-top: 1rem;"><strong>Monthly Breakdown:</strong></p>';
                     html += '<table class="report-table"><thead><tr><th>Month</th><th>Interest Earned</th></tr></thead><tbody>';
                     data.monthly.forEach(m => {
-                        html += `<tr><td>${m.month}</td><td style="color: #8b5cf6; font-weight: 700;">₹${parseFloat(m.interest_earned).toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${m.month}</td><td style="color: #8b5cf6; font-weight: 700;">₹${parseFloat(m.interest_earned).toFixed(0)}</td></tr>`;
                     });
                     html += '</tbody></table>';
                     break;
@@ -787,11 +787,11 @@
 
                 case 'member_savings':
                     html = '<p><strong>💰 Your Savings:</strong></p>';
-                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value" style="color: #10b981;">₹${parseFloat(data.total || 0).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value" style="color: #10b981;">₹${parseFloat(data.total || 0).toFixed(0)}</span></div>`;
                     if (data.transactions && data.transactions.length > 0) {
                         html += '<table class="report-table"><thead><tr><th>Date</th><th>Name</th><th>Amount</th></tr></thead><tbody>';
                         data.transactions.forEach(t => {
-                            html += `<tr><td>${new Date(t.date).toLocaleDateString()}</td><td>${t.name}</td><td style="color:#10b981;">₹${parseFloat(t.amount).toFixed(2)}</td></tr>`;
+                            html += `<tr><td>${new Date(t.date).toLocaleDateString()}</td><td>${t.name}</td><td style="color:#10b981;">₹${parseFloat(t.amount).toFixed(0)}</td></tr>`;
                         });
                         html += '</tbody></table>';
                     }
@@ -803,7 +803,7 @@
                         html += '<table class="report-table"><thead><tr><th>Name</th><th>Date</th><th>Amount</th><th>Repaid</th><th>Remaining</th></tr></thead><tbody>';
                         data.loans.forEach(l => {
                             const remaining = parseFloat(l.amount) - parseFloat(l.repaid || 0);
-                            html += `<tr><td>${l.name}</td><td>${new Date(l.date).toLocaleDateString()}</td><td>₹${parseFloat(l.amount).toFixed(2)}</td><td style="color:#10b981;">₹${parseFloat(l.repaid||0).toFixed(2)}</td><td style="color:#ef4444;">₹${remaining.toFixed(2)}</td></tr>`;
+                            html += `<tr><td>${l.name}</td><td>${new Date(l.date).toLocaleDateString()}</td><td>₹${parseFloat(l.amount).toFixed(0)}</td><td style="color:#10b981;">₹${parseFloat(l.repaid||0).toFixed(0)}</td><td style="color:#ef4444;">₹${remaining.toFixed(0)}</td></tr>`;
                         });
                         html += '</tbody></table>';
                     } else {
@@ -814,16 +814,16 @@
                 case 'member_summary':
                     html = '<p><strong>📊 Your Summary:</strong></p>';
                     html += `<div class="stat-box"><span class="stat-label">Members</span><span class="stat-value">${data.total_members || 1}</span></div>`;
-                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value" style="color:#10b981;">₹${parseFloat(data.total_savings||0).toFixed(2)}</span></div>`;
-                    html += `<div class="stat-box" style="border-left-color:#f59e0b;"><span class="stat-label">Total Loans</span><span class="stat-value" style="color:#f59e0b;">₹${parseFloat(data.total_loans||0).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value" style="color:#10b981;">₹${parseFloat(data.total_savings||0).toFixed(0)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color:#f59e0b;"><span class="stat-label">Total Loans</span><span class="stat-value" style="color:#f59e0b;">₹${parseFloat(data.total_loans||0).toFixed(0)}</span></div>`;
                     break;
 
                 case 'summary':
                     html = '<p><strong>📊 Overall Summary:</strong></p>';
                     html += `<div class="stat-box" style="border-left-color: #3b82f6;"><span class="stat-label">Members</span><span class="stat-value" style="color: #3b82f6;">${data.total_members}</span></div>`;
-                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value">₹${parseFloat(data.total_savings).toFixed(2)}</span></div>`;
-                    html += `<div class="stat-box" style="border-left-color: #f59e0b;"><span class="stat-label">Total Loans</span><span class="stat-value" style="color: #f59e0b;">₹${parseFloat(data.total_loans).toFixed(2)}</span></div>`;
-                    html += `<div class="stat-box" style="border-left-color: #8b5cf6;"><span class="stat-label">Profit</span><span class="stat-value" style="color: #8b5cf6;">₹${parseFloat(data.total_profit).toFixed(2)}</span></div>`;
+                    html += `<div class="stat-box"><span class="stat-label">Total Savings</span><span class="stat-value">₹${parseFloat(data.total_savings).toFixed(0)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color: #f59e0b;"><span class="stat-label">Total Loans</span><span class="stat-value" style="color: #f59e0b;">₹${parseFloat(data.total_loans).toFixed(0)}</span></div>`;
+                    html += `<div class="stat-box" style="border-left-color: #8b5cf6;"><span class="stat-label">Profit</span><span class="stat-value" style="color: #8b5cf6;">₹${parseFloat(data.total_profit).toFixed(0)}</span></div>`;
                     break;
 
                 case 'active_members':
