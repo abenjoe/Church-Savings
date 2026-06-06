@@ -51,6 +51,7 @@
                 </div>
                 
                 <form method="POST" action="{{ url_for('edit_loan', loan_id=loan.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </div>
 </body>
 </html>
