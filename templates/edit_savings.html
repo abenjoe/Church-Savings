@@ -51,6 +51,7 @@
                 </div>
                 
                 <form method="POST" action="{{ url_for('edit_savings', savings_id=saving.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-calendar"></i> Date *</label>
                         <input type="date" name="date" class="form-control" value="{{ saving.date.strftime('%Y-%m-%d') }}" required>
