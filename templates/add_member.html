@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ta">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add New Member</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;600&display=swap">
+    <style>
+        #member_name { font-family: 'Noto Sans Tamil', 'Segoe UI', sans-serif; }
+    </style>
     <script>
         // Load saved theme
         (function() {
@@ -57,7 +61,7 @@
 
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-user"></i> Full Name *</label>
-                        <input type="text" name="name" id="member_name" class="form-control" required placeholder="e.g., John Peter">
+                        <input type="text" name="name" id="member_name" class="form-control" required placeholder="e.g., John Peter / ஜான் பீட்டர்">
                         <small class="text-muted">Only letters, spaces, and periods allowed</small>
                     </div>
 
@@ -89,9 +93,22 @@
                     const contact = document.getElementById('member_contact').value.trim();
                     
                     // Validate name - only letters, spaces, and periods
-                    const namePattern = /^[A-Za-z\s.]+$/;
+                    const namePattern = /^[A-Za-z஀-௿\s.]+$/;
                     if (!namePattern.test(name)) {
-                        alert('❌ Invalid Name!\n\nName should only contain:\n✓ Letters (A-Z, a-z)\n✓ Spaces\n✓ Periods (.)\n\n❌ Numbers and special characters are NOT allowed.');
+                        alert('❌ Invalid Name!\n\nName should only contain:\n✓ English letters (A-Z, a-z)\n✓ Tamil letters (தமிழ்)\n✓ Spaces\n✓ Periods (.)\n\n❌ Numbers and special characters are NOT allowed.');
+                        document.getElementById('member_name').focus();
+                        return false;
+                    }
+
+                    // REMOVE THIS DUPLICATE
+                    if (false) {
+Name should only contain:
+✓ English letters (A-Z, a-z)
+✓ Tamil letters (தமிழ்)
+✓ Spaces
+✓ Periods (.)
+
+❌ Numbers and special characters are NOT allowed.');
                         document.getElementById('member_name').focus();
                         return false;
                     }
