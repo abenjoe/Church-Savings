@@ -1,13 +1,23 @@
 import os
+import sys
 from datetime import datetime, date, timedelta
 from functools import wraps
 
 import psycopg as psycopg2
 import psycopg.rows
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, g
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'Church Savings')
+csrf = CSRFProtect(app)
+
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
+app.secret_key = _secret_key
 
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
@@ -99,8 +109,9 @@ def log_action(username, action, entity_type, entity_id, details):
         )
         conn.commit()
         cur.close()
-    except Exception:
-        pass
+    except Exception as e:
+        import sys
+        print(f'[AUDIT LOG ERROR] Failed to log action "{action}" by "{username}": {e}', file=sys.stderr)
 
 
 # ============ DATABASE INITIALIZATION ============
@@ -235,8 +246,8 @@ def login():
 
         cur = get_cursor()
 
-        # Check users table first (Admin / collector)
-        cur.execute('SELECT * FROM users WHERE username = %s', [username])
+        # Check users table — admin and collector only (members must use phone number)
+        cur.execute("SELECT * FROM users WHERE username = %s AND role IN ('admin', 'collector')", [username])
         user = cur.fetchone()
 
         if user and password == user['password']:
@@ -884,7 +895,7 @@ def add_repayment(loan_id):
 
 
 @app.route('/savings_report')
-@login_required
+@collector_or_admin_required
 def savings_report():
     cur = get_cursor()
     cur.execute(
@@ -923,7 +934,7 @@ def bulk_savings():
                     try:
                         cur.execute(
                             'INSERT INTO savings (member_id, date, amount, added_by, added_at) VALUES (%s, %s, %s, %s, NOW())',
-                            (member_id, date, amount, added_by))
+                            (member_id, date, float(amount), added_by))
                         success_count += 1
                     except Exception:
                         error_count += 1
