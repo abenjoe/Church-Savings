@@ -53,12 +53,12 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <p><strong><i class="fas fa-calendar"></i> Loan Date:</strong> {{ loan.date.strftime('%d %B %Y') }}</p>
-                            <p><strong><i class="fas fa-rupee-sign"></i> Principal:</strong> ₹{{ "{:,.2f}".format(loan.amount) }}</p>
+                            <p><strong><i class="fas fa-rupee-sign"></i> Principal:</strong> ₹{{ "{:,.0f}".format(loan.amount) }}</p>
                             
                         </div>
                         <div>
-                            <p><strong><i class="fas fa-calculator"></i> Total Due:</strong> ₹{{ "{:,.2f}".format(loan.amount) }}</p>
-                            <p style="color: #ef4444;"><strong><i class="fas fa-exclamation-circle"></i> Principal Remaining:</strong> ₹{{ "{:,.2f}".format(principal_remaining) }}</p>
+                            <p><strong><i class="fas fa-calculator"></i> Total Due:</strong> ₹{{ "{:,.0f}".format(loan.amount) }}</p>
+                            <p style="color: #ef4444;"><strong><i class="fas fa-exclamation-circle"></i> Principal Remaining:</strong> ₹{{ "{:,.0f}".format(principal_remaining) }}</p>
                             
                         </div>
                     </div>
@@ -102,8 +102,8 @@
                         <i class="fas fa-hand-pointer"></i> <strong>Quick Options:</strong>
                         <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                onclick="document.getElementById('principalPaid').value=principalRemaining.toFixed(2); updateTotal();">
-                                Pay Full Principal (₹{{ "{:,.2f}".format(principal_remaining) }})
+                                onclick="document.getElementById('principalPaid').value=principalRemaining.toFixed(0); updateTotal();">
+                                Pay Full Principal (₹{{ "{:,.0f}".format(principal_remaining) }})
                             </button>
                         </div>
                     </div>
@@ -130,7 +130,7 @@
             
             const interest = parseFloat(document.getElementById('interestPaid').value) || 0;
             const total = principal + interest;
-            document.getElementById('totalPayment').textContent = '₹' + total.toFixed(2);
+            document.getElementById('totalPayment').textContent = '₹' + total.toFixed(0);
         }
 
         function payInterestOnly() {
@@ -140,13 +140,13 @@
         }
 
         function payPrincipalOnly() {
-            document.getElementById('principalPaid').value = principalRemaining.toFixed(2);
+            document.getElementById('principalPaid').value = principalRemaining.toFixed(0);
             
             calculateTotal();
         }
 
         function payFull() {
-            document.getElementById('principalPaid').value = principalRemaining.toFixed(2);
+            document.getElementById('principalPaid').value = principalRemaining.toFixed(0);
             
             calculateTotal();
         }
