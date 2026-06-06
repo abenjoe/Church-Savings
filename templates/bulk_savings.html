@@ -278,6 +278,7 @@
         </div>
 
         <form method="POST" action="{{ url_for('bulk_savings') }}" id="bulkSavingsForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-card" style="margin-bottom: 1.5rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label"><i class="fas fa-calendar"></i> Savings Date *</label>
