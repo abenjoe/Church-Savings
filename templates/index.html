@@ -153,21 +153,21 @@
             <div class="stat-card green">
                 <div>
                     <h6>Total Savings</h6>
-                    <h2>₹{{ "{:,.2f}".format(total_savings) }}</h2>
+                    <h2>₹{{ "{:,.0f}".format(total_savings) }}</h2>
                 </div>
                 <i class="fas fa-piggy-bank stat-icon"></i>
             </div>
             <div class="stat-card orange">
                 <div>
                     <h6>Total Loans Given</h6>
-                    <h2>₹{{ "{:,.2f}".format(total_loans) }}</h2>
+                    <h2>₹{{ "{:,.0f}".format(total_loans) }}</h2>
                 </div>
                 <i class="fas fa-hand-holding-usd stat-icon"></i>
             </div>
             <div class="stat-card purple">
                 <div>
                     <h6>Total Profit (Interest)</h6>
-                    <h2>₹{{ "{:,.2f}".format(total_profit) }}</h2>
+                    <h2>₹{{ "{:,.0f}".format(total_profit) }}</h2>
                 </div>
                 <i class="fas fa-chart-line stat-icon"></i>
             </div>
@@ -223,11 +223,11 @@
                         <div class="member-stats">
                             <div class="stat-item">
                                 <small><i class="fas fa-piggy-bank"></i> Savings</small>
-                                <strong class="text-success">₹{{ "{:,.2f}".format(member.total_savings) }}</strong>
+                                <strong class="text-success">₹{{ "{:,.0f}".format(member.total_savings) }}</strong>
                             </div>
                             <div class="stat-item">
                                 <small><i class="fas fa-hand-holding-usd"></i> Loans</small>
-                                <strong class="text-warning">₹{{ "{:,.2f}".format(member.total_loans) }}</strong>
+                                <strong class="text-warning">₹{{ "{:,.0f}".format(member.total_loans) }}</strong>
                             </div>
                         </div>
                         
