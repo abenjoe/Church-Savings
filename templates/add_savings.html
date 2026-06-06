@@ -51,6 +51,7 @@
                 </div>
                 
                 <form method="POST" action="{{ url_for('add_savings', member_id=member.member_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-calendar"></i> Date *</label>
                         <input type="date" name="date" class="form-control" value="{{ today }}" required>
