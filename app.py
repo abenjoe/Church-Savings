@@ -17,7 +17,9 @@ if not _secret_key:
         "SECRET_KEY environment variable is not set. "
         "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
     )
+app.config['SECRET_KEY'] = _secret_key
 app.secret_key = _secret_key
+app.config['WTF_CSRF_TIME_LIMIT'] = None
 
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
