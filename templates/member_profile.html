@@ -76,7 +76,7 @@
                 <div class="account-body">
                     <div class="account-total">
                         <h6><i class="fas fa-wallet"></i> Total Savings Balance</h6>
-                        <h3>₹{{ "{:,.2f}".format(total_savings) }}</h3>
+                        <h3>₹{{ "{:,.0f}".format(total_savings) }}</h3>
                     </div>
                     <h6 class="mb-2"><strong><i class="fas fa-history"></i> Transaction History</strong></h6>
                     <div class="transactions-container">
@@ -89,7 +89,7 @@
                                             <span>{{ saving.date.strftime('%d %B %Y') }}</span>
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <div class="transaction-amount">+ ₹{{ "{:,.2f}".format(saving.amount) }}</div>
+                                            <div class="transaction-amount">+ ₹{{ "{:,.0f}".format(saving.amount) }}</div>
                                             {% if role != 'member' %}
                                             <a href="{{ url_for('edit_savings', savings_id=saving.id) }}" class="btn btn-sm btn-primary" title="Edit">
                                                 <i class="fas fa-edit"></i>
@@ -124,7 +124,7 @@
                 <div class="account-body">
                     <div class="account-total loans-total">
                         <h6><i class="fas fa-money-bill-wave"></i> Total Loans Issued</h6>
-                        <h3>₹{{ "{:,.2f}".format(total_loans) }}</h3>
+                        <h3>₹{{ "{:,.0f}".format(total_loans) }}</h3>
                     </div>
                     
                     <h6 class="mb-2"><strong><i class="fas fa-history"></i> Loan History</strong></h6>
@@ -137,21 +137,21 @@
                                             <i class="fas fa-calendar"></i>
                                             <span>{{ loan.date.strftime('%d %B %Y') }}</span>
                                         </div>
-                                        <div class="transaction-amount loan-amount">₹{{ "{:,.2f}".format(loan.amount) }}</div>
+                                        <div class="transaction-amount loan-amount">₹{{ "{:,.0f}".format(loan.amount) }}</div>
                                     </div>
                                     <div class="loan-details">
-                                        <p><i class="fas fa-calculator"></i> <strong>Total Due:</strong> ₹{{ "{:,.2f}".format(loan.amount) }}</p>
+                                        <p><i class="fas fa-calculator"></i> <strong>Total Due:</strong> ₹{{ "{:,.0f}".format(loan.amount) }}</p>
                                         <hr style="border: 1px dashed #fde68a; margin: 0.5rem 0;">
                                         {% if loan.principal_repaid is defined %}
-                                        <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Principal Repaid:</strong> ₹{{ "{:,.2f}".format(loan.principal_repaid) }}</p>
-                                        <p style="color: #8b5cf6;"><i class="fas fa-percentage"></i> <strong>Interest Repaid:</strong> ₹{{ "{:,.2f}".format(loan.interest_repaid) }}</p>
-                                        <p style="color: #3b82f6;"><i class="fas fa-wallet"></i> <strong>Total Repaid:</strong> ₹{{ "{:,.2f}".format(loan.total_repayments) }}</p>
+                                        <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Principal Repaid:</strong> ₹{{ "{:,.0f}".format(loan.principal_repaid) }}</p>
+                                        <p style="color: #8b5cf6;"><i class="fas fa-percentage"></i> <strong>Interest Repaid:</strong> ₹{{ "{:,.0f}".format(loan.interest_repaid) }}</p>
+                                        <p style="color: #3b82f6;"><i class="fas fa-wallet"></i> <strong>Total Repaid:</strong> ₹{{ "{:,.0f}".format(loan.total_repayments) }}</p>
                                         <hr style="border: 1px dashed #fde68a; margin: 0.5rem 0;">
                                         
                                         {% else %}
-                                        <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Repaid:</strong> ₹{{ "{:,.2f}".format(loan.total_repayments) }}</p>
+                                        <p style="color: #10b981;"><i class="fas fa-check-circle"></i> <strong>Repaid:</strong> ₹{{ "{:,.0f}".format(loan.total_repayments) }}</p>
                                         {% endif %}
-                                        <p style="color: #991b1b; font-size: 1.1rem;"><i class="fas fa-coins"></i> <strong>Total Remaining:</strong> ₹{{ "{:,.2f}".format(loan.remaining) }}</p>
+                                        <p style="color: #991b1b; font-size: 1.1rem;"><i class="fas fa-coins"></i> <strong>Total Remaining:</strong> ₹{{ "{:,.0f}".format(loan.remaining) }}</p>
                                         {% if loan.repayments %}
                                         <div style="margin-top: 1rem;">
                                             <p style="font-weight: 700; margin-bottom: 0.5rem;"><i class="fas fa-history"></i> Repayment History:</p>
@@ -168,9 +168,9 @@
                                                     {% for r in loan.repayments %}
                                                     <tr>
                                                         <td style="padding: 0.5rem; border-bottom: 1px solid #f3f4f6;">{{ r.date.strftime('%d %b %Y') if r.date else '-' }}</td>
-                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; color: #10b981;">₹{{ "{:,.2f}".format(r.principal_paid or 0) }}</td>
-                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; color: #8b5cf6;">₹{{ "{:,.2f}".format(r.interest_paid or 0) }}</td>
-                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; font-weight: 700;">₹{{ "{:,.2f}".format(r.total_amount or 0) }}</td>
+                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; color: #10b981;">₹{{ "{:,.0f}".format(r.principal_paid or 0) }}</td>
+                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; color: #8b5cf6;">₹{{ "{:,.0f}".format(r.interest_paid or 0) }}</td>
+                                                        <td style="padding: 0.5rem; text-align: right; border-bottom: 1px solid #f3f4f6; font-weight: 700;">₹{{ "{:,.0f}".format(r.total_amount or 0) }}</td>
                                                     </tr>
                                                     {% endfor %}
                                                 </tbody>
