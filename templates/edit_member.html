@@ -48,6 +48,7 @@
                 <h2><i class="fas fa-user-edit"></i> Edit Member Details</h2>
                 
                 <form method="POST" action="{{ url_for('edit_member', member_id=member.member_id) }}" onsubmit="return validateEditMemberForm()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <label class="form-label"><i class="fas fa-id-card"></i> Member ID *</label>
                         <input type="text" name="member_id" class="form-control" value="{{ member.member_id }}" required>
