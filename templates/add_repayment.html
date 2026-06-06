@@ -65,6 +65,7 @@
                 </div>
                 
                 <form method="POST" action="{{ url_for('add_repayment', loan_id=loan.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">
